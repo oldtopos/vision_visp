@@ -30,6 +30,6 @@ getInitialPoseFileFromModelName (const std::string& modelName,
                                  const std::string& defaultPath);
 
 bool
-makeModelFile(boost::filesystem::ofstream& stream, std::string& fullModelPath);
+makeModelFile(boost::filesystem::ofstream& stream, std::string& fullModelPath, std::string& modelDescription);
 
 #endif //! VISP_TRACKER_FILE_HH

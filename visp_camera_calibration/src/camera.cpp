@@ -52,12 +52,12 @@
 #include "names.h"
 #include <sstream>
 #include <visp_bridge/image.h>
-#include "visp_camera_calibration/calibrate.h"
+#include "visp_camera_calibration/srv/calibrate.hpp"
 #include <visp/vpImage.h>
 #include <visp/vpDot2.h>
 #include <visp/vpCalibration.h>
-#include "camera_calibration_parsers/parse.h"
-#include "camera_calibration_parsers/parse_ini.h"
+#include "camera_calibration_parsers/parse.hpp"
+#include "camera_calibration_parsers/parse_ini.hpp"
 
 
 #include <visp/vpDisplayX.h>
@@ -67,8 +67,8 @@
 
 namespace visp_camera_calibration
 {
-Camera::Camera() :
-            spinner(0),
+Camera::Camera(const rclcpp::NodeOptions & options) : Node("calibrator", options),
+//            spinner(0),
             queue_size_(1000),
             nb_points_(4),
             img_(360,480,255)
@@ -77,22 +77,43 @@ Camera::Camera() :
   std::string images_path;
 
   //prepare function objects
-  set_camera_info_service_callback_t set_camera_info_callback = boost::bind(&Camera::setCameraInfoCallback, this, _1,_2);
+  //set_camera_info_service_callback_t set_camera_info_callback = boost::bind(&Camera::setCameraInfoCallback, this, _1,_2);
 
   //define services
-  set_camera_info_service_ = n_.advertiseService(visp_camera_calibration::set_camera_info_service,set_camera_info_callback);
+  // set_camera_info_service_ = n_.advertiseService(visp_camera_calibration::set_camera_info_service,set_camera_info_callback);
+  
+  set_camera_info_service_ = this->create_service<sensor_msgs::srv::SetCameraInfo>(visp_camera_calibration::set_camera_info_service, std::bind(&Camera::setCameraInfoCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
-  raw_image_publisher_ = n_.advertise<sensor_msgs::Image>(visp_camera_calibration::raw_image_topic, queue_size_);
+  // raw_image_publisher_ = n_.advertise<sensor_msgs::Image>(visp_camera_calibration::raw_image_topic, queue_size_);
 
-  calibrate_service_ = n_.serviceClient<visp_camera_calibration::calibrate> (visp_camera_calibration::calibrate_service);
+  raw_image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>(visp_camera_calibration::raw_image_topic, queue_size_ );
 
-  ros::param::getCached(visp_camera_calibration::images_path_param,images_path);
+  // calibrate_service_ = n_.serviceClient<visp_camera_calibration::calibrate> (visp_camera_calibration::calibrate_service);
+  
+  calibrate_service_ =  this->create_client<visp_camera_calibration::srv::Calibrate> (visp_camera_calibration::calibrate_service);
+
+
+  // ros::param::getCached(visp_camera_calibration::images_path_param,images_path);
+  // ros::param::getCached(visp_camera_calibration::gray_level_precision_param,gray_level_precision);
+  // ros::param::getCached(visp_camera_calibration::size_precision_param,size_precision);
+  
+  this->declare_parameter<std::string>(visp_camera_calibration::images_path_param);
+  this->declare_parameter<double>(visp_camera_calibration::gray_level_precision_param);
+  this->declare_parameter<double>(visp_camera_calibration::size_precision_param);
+
+  rclcpp::Parameter images_path_param = this->get_parameter(visp_camera_calibration::images_path_param);
+  rclcpp::Parameter gray_level_precision_param = this->get_parameter(visp_camera_calibration::gray_level_precision_param);
+  rclcpp::Parameter size_precision_param = this->get_parameter(visp_camera_calibration::size_precision_param);
+
+  images_path = images_path_param.as_string();
+  this->gray_level_precision_ = gray_level_precision_param.as_double();
+  this->size_precision_ = size_precision_param.as_double();
 
   reader_.setFileName(images_path.c_str());
   reader_.setFirstFrameIndex(1);
   reader_.open(img_);
 
-  ROS_INFO_STREAM("str=" << images_path);
+  RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "str=" << images_path);
   vpDisplay* disp = new vpDisplayX();
   disp->init(img_);
   disp->setTitle("camera");
@@ -101,67 +122,70 @@ Camera::Camera() :
   vpDisplay::displayCharString(img_,img_.getHeight()/2,img_.getWidth()/4,"Click to publish camera feed.",vpColor::red);
   vpDisplay::flush(img_);
 
-  spinner.start();
+  //spinner.start();
 }
 
 void Camera::sendVideo(){
-  double gray_level_precision;
-  double size_precision;
+  double gray_level_precision = this->gray_level_precision_;
+  double size_precision = this->size_precision_;
 
-  ros::param::getCached(visp_camera_calibration::gray_level_precision_param,gray_level_precision);
-  ros::param::getCached(visp_camera_calibration::size_precision_param,size_precision);
-  ROS_INFO("Click to start sending image data");
-  while(ros::ok() && !vpDisplay::getClick(img_,false));
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Click to start sending image data");
+  //while(ros::ok() && !vpDisplay::getClick(img_,false));
 
-  for(unsigned int i=0;i<(unsigned int)reader_.getLastFrameIndex() && ros::ok();i++){
+  for(unsigned int i=0;i<(unsigned int)reader_.getLastFrameIndex() /*&& ros::ok()*/;i++){
     reader_.acquire(img_);
-    sensor_msgs::Image image;
+    sensor_msgs::msg::Image image;
 
     image = visp_bridge::toSensorMsgsImage(img_);
 
     vpDisplay::display(img_);
 
-    vpDisplay::displayCharString(img_,img_.getHeight()/2,img_.getWidth()/4,boost::str(boost::format("publishing frame %1% on %2%") % (i+1) % raw_image_publisher_.getTopic()).c_str(),vpColor::red);
+    vpDisplay::displayCharString(img_,img_.getHeight()/2,img_.getWidth()/4,boost::str(boost::format("publishing frame %1% on %2%") % (i+1) % raw_image_publisher_->get_topic_name()).c_str(),vpColor::red);
     vpDisplay::flush(img_);
 
-    raw_image_publisher_.publish(image);
+    raw_image_publisher_->publish(image);
 
-    ROS_INFO("Sending image %d/%d",i+1,(int)reader_.getLastFrameIndex());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Sending image %d/%d",i+1,(int)reader_.getLastFrameIndex());
     //vpDisplay::getClick(img_);
   }
 
-  ROS_INFO("When finished selecting points, click on the camera window for calibration");
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "When finished selecting points, click on the camera window for calibration");
   vpDisplay::displayCharString(img_,img_.getHeight()/2+30,img_.getWidth()/4,"When finished selecting points, click here for calibration",vpColor::red);
   vpDisplay::flush(img_);
-  while(ros::ok() && !vpDisplay::getClick(img_,false));
-  visp_camera_calibration::calibrate calibrate_comm;
-  calibrate_comm.request.method = vpCalibration::CALIB_VIRTUAL_VS_DIST;
-  calibrate_comm.request.sample_width= img_.getWidth();
-  calibrate_comm.request.sample_height = img_.getHeight();
-  if (calibrate_service_.call(calibrate_comm)){
-      ROS_INFO("service called successfully");
+  //while(ros::ok() && !vpDisplay::getClick(img_,false));
+  auto calibrate_comm = std::make_shared<visp_camera_calibration::srv::Calibrate::Request>();
 
-      ROS_INFO("standard deviation with distorsion:");
-      for(std::vector<double>::iterator i = calibrate_comm.response.stdDevErrs.begin();i!=calibrate_comm.response.stdDevErrs.end();i++)
-        ROS_INFO("%f",*i);
+  calibrate_comm->method = vpCalibration::CALIB_VIRTUAL_VS_DIST;
+  calibrate_comm->sample_width= img_.getWidth();
+  calibrate_comm->sample_height = img_.getHeight();
+  
+  auto calibrate_comm_result = calibrate_service_->async_send_request(calibrate_comm);
+  
+  if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), calibrate_comm_result) == rclcpp::FutureReturnCode::SUCCESS){
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service called successfully");
+
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "standard deviation with distorsion:");
+      for(std::vector<double>::iterator i = calibrate_comm_result.get()->std_dev_errs.begin();i!=calibrate_comm_result.get()->std_dev_errs.end();i++)
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "%f",*i);
   }else{
-    ROS_ERROR("Failed to call service");
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service");
   }
 }
 
-bool Camera::setCameraInfoCallback(sensor_msgs::SetCameraInfo::Request  &req,
-                             sensor_msgs::SetCameraInfo::Response &res){
+bool Camera::setCameraInfoCallback(const std::shared_ptr<rmw_request_id_t> request_header, 
+      const std::shared_ptr<sensor_msgs::srv::SetCameraInfo::Request> req,
+      std::shared_ptr<sensor_msgs::srv::SetCameraInfo::Response> res) {
   std::string calib_info;
   std::stringstream ss(calib_info);
 
   //std::ostream os;
-  ROS_INFO("setting camera info");
-  camera_calibration_parsers::writeCalibrationIni(ss,visp_camera_calibration::raw_image_topic,req.camera_info);
-  ROS_INFO("%s",ss.str().c_str());
-  camera_calibration_parsers::writeCalibration("calibration.ini",visp_camera_calibration::raw_image_topic,req.camera_info);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "setting camera info");
+  camera_calibration_parsers::writeCalibrationIni(ss,visp_camera_calibration::raw_image_topic,req->camera_info);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "%s",ss.str().c_str());
+  camera_calibration_parsers::writeCalibration("calibration.ini",visp_camera_calibration::raw_image_topic,req->camera_info);
 
 
-  ROS_INFO("end of setting camera info");
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "end of setting camera info");
   return true;
 }
 

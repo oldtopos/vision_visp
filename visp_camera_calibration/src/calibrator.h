@@ -47,29 +47,31 @@
  \brief 
  */
 
-#include "ros/ros.h"
+#include "rclcpp/rclcpp.hpp"
+#include <sensor_msgs/srv/set_camera_info.hpp>
 
-#include "visp_camera_calibration/CalibPointArray.h"
+#include "visp_camera_calibration/msg/calib_point_array.hpp"
 #include <visp/vpPoint.h>
 #include <visp/vpCalibration.h>
-#include "visp_camera_calibration/calibrate.h"
+#include "visp_camera_calibration/srv/calibrate.hpp"
 #include <vector>
+
+#include <boost/function.hpp>
 
 #ifndef __visp_camera_calibration_CALIBRATOR_H__
 #define __visp_camera_calibration_CALIBRATOR_H__
 namespace visp_camera_calibration
 {
-  class Calibrator
+  class Calibrator : public rclcpp::Node
   {
   private:
-    ros::NodeHandle             n_;
-
     unsigned long               queue_size_;
 
-    ros::Subscriber             point_correspondence_subscriber_;
-    ros::ServiceClient          set_camera_info_service_;
-    ros::ServiceClient          set_camera_info_bis_service_;
-    ros::ServiceServer          calibrate_service_;
+    rclcpp::Subscription<visp_camera_calibration::msg::CalibPointArray>::SharedPtr point_correspondence_subscriber_;
+    rclcpp::Client<sensor_msgs::srv::SetCameraInfo>::SharedPtr set_camera_info_service_;
+    rclcpp::Client<sensor_msgs::srv::SetCameraInfo>::SharedPtr set_camera_info_bis_service_;
+    
+    rclcpp::Service<visp_camera_calibration::srv::Calibrate>::SharedPtr calibrate_service_;
 
     std::vector<vpPoint>        selected_points_;
     std::vector<vpPoint>        model_points_;
@@ -80,22 +82,23 @@ namespace visp_camera_calibration
 
       \param image_and_points: image of the grid and selected keypoints to compute on
      */
-    void pointCorrespondenceCallback(const visp_camera_calibration::CalibPointArray::ConstPtr& point_correspondence);
+    //void pointCorrespondenceCallback(const visp_camera_calibration::msg::CalibPointArray::SharedPtr point_correspondence);
     /*!
       \brief service performing the calibration from all previously computed calibration objects.
 
      */
-    bool calibrateCallback(visp_camera_calibration::calibrate::Request  &req,
-                           visp_camera_calibration::calibrate::Response &res);
+    //bool calibrateCallback(visp_camera_calibration::srv::Calibrate_Request  &req,
+        //                   visp_camera_calibration::srv::Calibrate_Response &res);
   public:
     //! subscriber type declaration for raw_image topic subscriber
-    typedef boost::function<void (const visp_camera_calibration::CalibPointArray::ConstPtr& )>
-      point_correspondence_subscriber_callback_t;
+    void pointCorrespondenceCallback(const visp_camera_calibration::msg::CalibPointArray::SharedPtr point_correspondence) ;
 
     //! service type declaration for calibrate service
-    typedef boost::function<bool (visp_camera_calibration::calibrate::Request&,visp_camera_calibration::calibrate::Response& res)>
-      calibrate_service_callback_t;
-    Calibrator();
+    void calibrate(const std::shared_ptr<rmw_request_id_t> request_header, const std::shared_ptr<visp_camera_calibration::srv::Calibrate::Request > req,
+         std::shared_ptr<visp_camera_calibration::srv::Calibrate::Response> res);
+         
+         
+    Calibrator(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
     void spin();
     virtual ~Calibrator();
   };

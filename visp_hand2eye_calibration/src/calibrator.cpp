@@ -60,33 +60,32 @@
 
 namespace visp_hand2eye_calibration
 {
-  void Calibrator::cameraObjectCallback(const geometry_msgs::Transform::ConstPtr& trans)
+  void Calibrator::cameraObjectCallback(const geometry_msgs::msg::Transform::SharedPtr trans)
   {
-    ROS_DEBUG("new cMo: [%f,%f,%f -- %f,%f,%f,%f]", trans->translation.x,trans->translation.y,trans->translation.z,trans->rotation.x,trans->rotation.y,trans->rotation.z,trans->rotation.w);
+    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "new cMo: [%f,%f,%f -- %f,%f,%f,%f]", trans->translation.x,trans->translation.y,trans->translation.z,trans->rotation.x,trans->rotation.y,trans->rotation.z,trans->rotation.w);
     vpHomogeneousMatrix cMo;
     cMo = visp_bridge::toVispHomogeneousMatrix(*trans);
     cMo_vec_.push_back(cMo);
   }
 
-  void Calibrator::worldEffectorCallback(const geometry_msgs::Transform::ConstPtr& trans)
+  void Calibrator::worldEffectorCallback(const geometry_msgs::msg::Transform::SharedPtr trans)
   {
-    ROS_DEBUG("new wMe: [%f,%f,%f -- %f,%f,%f,%f]", trans->translation.x,trans->translation.y,trans->translation.z,trans->rotation.x,trans->rotation.y,trans->rotation.z,trans->rotation.w);
+    RCLCPP_DEBUG(rclcpp::get_logger("rclcpp"), "new wMe: [%f,%f,%f -- %f,%f,%f,%f]", trans->translation.x,trans->translation.y,trans->translation.z,trans->rotation.x,trans->rotation.y,trans->rotation.z,trans->rotation.w);
     vpHomogeneousMatrix wMe;
     wMe = visp_bridge::toVispHomogeneousMatrix(*trans);
     wMe_vec_.push_back(wMe);
   }
 
-  bool Calibrator::computeEffectorCameraCallback(
-                                                    visp_hand2eye_calibration::compute_effector_camera::Request &req,
-                                                    visp_hand2eye_calibration::compute_effector_camera::Response &res)
+  void Calibrator::computeEffectorCameraCallback(const std::shared_ptr<rmw_request_id_t> request_header, const std::shared_ptr<visp_hand2eye_calibration::srv::ComputeEffectorCamera::Request > req,
+         std::shared_ptr<visp_hand2eye_calibration::srv::ComputeEffectorCamera::Response> res)
   {
     if (cMo_vec_.size() != wMe_vec_.size() || wMe_vec_.size() < 2)
     {
-      ROS_ERROR("transformation vectors have different sizes or contain too few elements");
-      return false;
+      RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "transformation vectors have different sizes or contain too few elements");
+      return;
     }
 
-    ROS_INFO("computing %d values...",(int)wMe_vec_.size());
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "computing %d values...",(int)wMe_vec_.size());
     vpHomogeneousMatrix eMc;
 
 #if VISP_VERSION_INT >= (3<<16 | 2<<8 | 0)
@@ -96,19 +95,18 @@ namespace visp_hand2eye_calibration
 #else
     vpCalibration::calibrationTsai(cMo_vec_.size(), &(cMo_vec_[0]), &(wMe_vec_[0]), eMc);
 #endif
-    geometry_msgs::Transform trans;
+    geometry_msgs::msg::Transform trans;
     trans = visp_bridge::toGeometryMsgsTransform(eMc);
 
-    res.effector_camera = trans;
-    return true;
+    res->effector_camera = trans;
+    return;
   }
-
-  bool Calibrator::computeEffectorCameraQuickCallback(
-                                                          visp_hand2eye_calibration::compute_effector_camera_quick::Request &req,
-                                                          visp_hand2eye_calibration::compute_effector_camera_quick::Response &res)
+  
+  void Calibrator::computeEffectorCameraQuickCallback(const std::shared_ptr<rmw_request_id_t> request_header, const std::shared_ptr<visp_hand2eye_calibration::srv::ComputeEffectorCameraQuick::Request > req,
+         std::shared_ptr<visp_hand2eye_calibration::srv::ComputeEffectorCameraQuick::Response> res)
   {
-    visp_hand2eye_calibration::TransformArray camera_object = req.camera_object;
-    visp_hand2eye_calibration::TransformArray world_effector = req.world_effector;
+    visp_hand2eye_calibration::msg::TransformArray camera_object = req->camera_object;
+    visp_hand2eye_calibration::msg::TransformArray world_effector = req->world_effector;
     std::vector<vpHomogeneousMatrix> cMo_vec;
     std::vector<vpHomogeneousMatrix> wMe_vec;
     for(unsigned int i=0;i<camera_object.transforms.size();i++){
@@ -117,11 +115,11 @@ namespace visp_hand2eye_calibration
     }
     if (camera_object.transforms.size() != world_effector.transforms.size() || world_effector.transforms.size() < 2)
     {
-      ROS_ERROR("transformation vectors have different sizes or contain too few elements");
-      return false;
+      RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "transformation vectors have different sizes or contain too few elements");
+      return;
     }
 
-    ROS_INFO("computing...");
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "computing...");
     vpHomogeneousMatrix eMc;
 #if VISP_VERSION_INT >= (3<<16 | 2<<8 | 0)
     vpHandEyeCalibration::calibrate(cMo_vec, wMe_vec, eMc);
@@ -130,65 +128,50 @@ namespace visp_hand2eye_calibration
 #else
     vpCalibration::calibrationTsai(cMo_vec.size(), &(cMo_vec[0]), &(wMe_vec[0]),eMc);
 #endif
-    geometry_msgs::Transform trans;
+    geometry_msgs::msg::Transform trans;
     trans = visp_bridge::toGeometryMsgsTransform(eMc);
-    res.effector_camera = trans;
-    return true;
+    res->effector_camera = trans;
+    return;
   }
 
-  bool Calibrator::resetCallback(visp_hand2eye_calibration::reset::Request &req,
-                                  visp_hand2eye_calibration::reset::Response &res)
+  void Calibrator::resetCallback(const std::shared_ptr<rmw_request_id_t> request_header, const std::shared_ptr<visp_hand2eye_calibration::srv::Reset::Request > req,
+         std::shared_ptr<visp_hand2eye_calibration::srv::Reset::Response> res)
   {
-    ROS_INFO("reseting...");
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "reseting...");
     cMo_vec_.clear();
     wMe_vec_.clear();
-    return true;
+    return;
   }
 
-  Calibrator::Calibrator() :
-    check_inputs_(ros::NodeHandle(), ros::this_node::getName()),
+  Calibrator::Calibrator(const rclcpp::NodeOptions & options) : Node("calibrator", options),
+    //check_inputs_(ros::NodeHandle(), ros::this_node::getName()),
     queue_size_(1000)
   {
-
-    //prepare function objects
-    camera_object_subscriber_callback_t camera_object_callback = boost::bind(&Calibrator::cameraObjectCallback, this, _1);
-    world_effector_subscriber_t world_effector_callback = boost::bind(&Calibrator::worldEffectorCallback, this, _1);
-
-    compute_effector_camera_service_callback_t compute_effector_camera_callback =
-        boost::bind(&Calibrator::computeEffectorCameraCallback, this, _1, _2);
-    compute_effector_camera_quick_service_callback_t compute_effector_camera_quick_callback =
-        boost::bind(&Calibrator::computeEffectorCameraQuickCallback, this, _1, _2);
-    reset_service_callback_t reset_callback = boost::bind(&Calibrator::resetCallback, this, _1, _2);
+    //define subscribers
+    camera_object_subscriber_ = this->create_subscription<geometry_msgs::msg::Transform>( visp_hand2eye_calibration::camera_object_topic, queue_size_, std::bind(&Calibrator::cameraObjectCallback, this, std::placeholders::_1));
+    world_effector_subscriber_ = this->create_subscription<geometry_msgs::msg::Transform>( visp_hand2eye_calibration::world_effector_topic, queue_size_, std::bind(&Calibrator::worldEffectorCallback, this, std::placeholders::_1));
 
     //define services
-    compute_effector_camera_service_
-        = n_.advertiseService(visp_hand2eye_calibration::compute_effector_camera_service,
-                              compute_effector_camera_callback);
-    compute_effector_camera_quick_service_
-        = n_.advertiseService(visp_hand2eye_calibration::compute_effector_camera_quick_service,
-                              compute_effector_camera_quick_callback);
-    reset_service_ = n_.advertiseService(visp_hand2eye_calibration::reset_service, reset_callback);
-
-    ros::V_string topics;
-    topics.push_back(visp_hand2eye_calibration::camera_object_topic);
-    topics.push_back(visp_hand2eye_calibration::world_effector_topic);
+    compute_effector_camera_service_ = this->create_service<visp_hand2eye_calibration::srv::ComputeEffectorCamera>(visp_hand2eye_calibration::compute_effector_camera_service, std::bind(&Calibrator::computeEffectorCameraCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    compute_effector_camera_quick_service_ = this->create_service<visp_hand2eye_calibration::srv::ComputeEffectorCameraQuick>(visp_hand2eye_calibration::compute_effector_camera_quick_service, std::bind(&Calibrator::computeEffectorCameraQuickCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    reset_service_ = this->create_service<visp_hand2eye_calibration::srv::Reset>(visp_hand2eye_calibration::reset_service, std::bind(&Calibrator::resetCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
 
-    check_inputs_.start(topics, 60.0);
-    if (!ros::ok())
-      return;
-    //define subscribers
-    camera_object_subscriber_ = n_.subscribe(visp_hand2eye_calibration::camera_object_topic, queue_size_,
-                                             camera_object_callback);
-    world_effector_subscriber_ = n_.subscribe(visp_hand2eye_calibration::world_effector_topic, queue_size_,
-                                              world_effector_callback);
+    //ros::V_string topics;
+    //topics.push_back(visp_hand2eye_calibration::camera_object_topic);
+    //topics.push_back(visp_hand2eye_calibration::world_effector_topic);
+
+
+   // check_inputs_.start(topics, 60.0);
+    //if (!ros::ok())
+    //  return;
 
 
   }
 
   void Calibrator::spin()
   {
-    ros::spin();
+    //ros::spin();
   }
   Calibrator::~Calibrator()
   {

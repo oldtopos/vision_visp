@@ -50,7 +50,7 @@
 
 #include "visp_bridge/camera.h"
 
-#include <camera_calibration_parsers/parse.h>
+#include <camera_calibration_parsers/parse.hpp>
 #include <visp/vpXmlParserCamera.h>
 #include <visp/vpCameraParameters.h>
 
@@ -105,7 +105,7 @@ int main(int argc, const char ** argv)
 
     vpXmlParserCamera parser;
     vpCameraParameters vispParam;
-    sensor_msgs::CameraInfo rosParam;
+    sensor_msgs::msg::CameraInfo rosParam;
     const unsigned int width = vm["width"].as<uint>();
     const unsigned int height = vm["height"].as<uint>();
 

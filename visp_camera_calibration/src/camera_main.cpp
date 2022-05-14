@@ -49,13 +49,12 @@
 
 
 #include "camera.h"
-#include "ros/ros.h"
+#include "rclcpp/rclcpp.hpp"
 
 int main(int argc,char** argv){
-  ros::init(argc, argv, "camera");
-  visp_camera_calibration::Camera cam;
-  cam.sendVideo();
-  ros::waitForShutdown();
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<visp_camera_calibration::Camera>());
+  rclcpp::shutdown();
 
   return 0;
 }

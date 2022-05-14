@@ -48,8 +48,8 @@
 */
 
 
-#include "geometry_msgs/Transform.h"
-#include "geometry_msgs/Pose.h"
+#include <geometry_msgs/msg/transform.hpp>
+#include <geometry_msgs/msg/pose.hpp>
 #include "visp/vpHomogeneousMatrix.h"
 
 #ifndef _VISP_BRIDGE_3DPOSE_H_
@@ -62,26 +62,26 @@ namespace visp_bridge{
     \param trans: transformation in ROS/geometry_msgs format.
     \return: transformation in ViSP format.
   */
-  vpHomogeneousMatrix toVispHomogeneousMatrix(const geometry_msgs::Transform& trans);
+  vpHomogeneousMatrix toVispHomogeneousMatrix(const geometry_msgs::msg::Transform& trans);
 
   /*!
       \brief Converts a geometry_msgs::Transform to a ViSP homogeneous matrix (vpHomogeneousMatrix).
       \param pose: transformation in ROS/geometry_msgs format.
       \return: transformation in ViSP format.
     */
-  vpHomogeneousMatrix toVispHomogeneousMatrix(const geometry_msgs::Pose& pose);
+  vpHomogeneousMatrix toVispHomogeneousMatrix(const geometry_msgs::msg::Pose& pose);
   /*!
     \brief Converts a ViSP homogeneous matrix (vpHomogeneousMatrix) to a geometry_msgs::Transform.
     \param mat: transformation in ViSP format.
     \return: transformation in ROS/geometry_msgs format.
   */
-  geometry_msgs::Transform toGeometryMsgsTransform(const vpHomogeneousMatrix& mat);
+  geometry_msgs::msg::Transform toGeometryMsgsTransform(const vpHomogeneousMatrix& mat);
 
   /*!
 	  \brief Converts a ViSP homogeneous matrix (vpHomogeneousMatrix) to a geometry_msgs::Pose.
 	  \param mat: transformation in ViSP format.
 	  \return: transformation in ROS/geometry_msgs format.
 	*/
-  geometry_msgs::Pose toGeometryMsgsPose(const vpHomogeneousMatrix& mat);
+  geometry_msgs::msg::Pose toGeometryMsgsPose(const vpHomogeneousMatrix& mat);
 }
 #endif /* 3DPOSE_H_ */

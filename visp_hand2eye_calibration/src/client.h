@@ -49,29 +49,27 @@
 
 #ifndef __visp_hand2eye_calibration_CLIENT_H__
 #define __visp_hand2eye_calibration_CLIENT_H__
-#include "ros/ros.h"
-#include "geometry_msgs/Transform.h"
-#include "visp_hand2eye_calibration/compute_effector_camera.h" 
-#include "visp_hand2eye_calibration/compute_effector_camera_quick.h" 
-#include "visp_hand2eye_calibration/reset.h" 
+
+#include "rclcpp/rclcpp.hpp"
+#include "geometry_msgs/msg/transform.hpp"
+#include "visp_hand2eye_calibration/srv/compute_effector_camera.hpp" 
+#include "visp_hand2eye_calibration/srv/compute_effector_camera_quick.hpp" 
+#include "visp_hand2eye_calibration/srv/reset.hpp" 
 
 namespace visp_hand2eye_calibration{ 
-  class Client{
+  class Client : public rclcpp::Node{
   private:
-    ros::NodeHandle n_;
-    ros::Publisher camera_object_publisher_;
-    ros::Publisher world_effector_publisher_;
-    ros::ServiceClient reset_service_;
-    ros::ServiceClient compute_effector_camera_service_;
-    ros::ServiceClient compute_effector_camera_quick_service_;
-
-    visp_hand2eye_calibration::reset reset_comm;
-    visp_hand2eye_calibration::compute_effector_camera emc_comm;
-    visp_hand2eye_calibration::compute_effector_camera_quick emc_quick_comm;
-
+    rclcpp::Publisher<geometry_msgs::msg::Transform>::SharedPtr camera_object_publisher_;
+    rclcpp::Publisher<geometry_msgs::msg::Transform>::SharedPtr world_effector_publisher_;
+  
+    rclcpp::Client<visp_hand2eye_calibration::srv::Reset>::SharedPtr reset_service_;
+    rclcpp::Client<visp_hand2eye_calibration::srv::ComputeEffectorCamera>::SharedPtr compute_effector_camera_service_;
+    rclcpp::Client<visp_hand2eye_calibration::srv::ComputeEffectorCameraQuick>::SharedPtr compute_effector_camera_quick_service_;
     
+     std::shared_ptr<visp_hand2eye_calibration::srv::ComputeEffectorCameraQuick::Request> emc_quick_comm;
+
   public:
-    Client();
+    Client(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
     void initAndSimulate();
     void computeFromTopicStream();
     void computeUsingQuickService();

@@ -53,14 +53,14 @@
 #ifndef _VISP_BRIDGE_CAMERA_H_
 #define _VISP_BRIDGE_CAMERA_H_
 #include <visp/vpCameraParameters.h>
-#include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/msg/camera_info.hpp>
 namespace visp_bridge{
   /*!
     \brief Converts a sensor_msgs::CameraInfo to ViSP camera parameters (vpCameraParameters).
     \param cam_info: camera parameters in ROS/sensor_msgs format.
     \return: camera parameters in ViSP format.
   */
-  vpCameraParameters toVispCameraParameters(const sensor_msgs::CameraInfo& cam_info);
+  vpCameraParameters toVispCameraParameters(const sensor_msgs::msg::CameraInfo& cam_info);
   /*!
     \brief Converts ViSP camera parameters (vpCameraParameters) to sensor_msgs::CameraInfo.
     \param cam_info: camera parameters in ViSP format.
@@ -68,7 +68,7 @@ namespace visp_bridge{
     \param cam_image_height: y-resolution of the camera image
     \return: camera parameters in ROS/sensor_msgs format.
   */
-  sensor_msgs::CameraInfo toSensorMsgsCameraInfo(vpCameraParameters& cam_info, unsigned int cam_image_width, unsigned int cam_image_height);
+  sensor_msgs::msg::CameraInfo toSensorMsgsCameraInfo(vpCameraParameters& cam_info, unsigned int cam_image_width, unsigned int cam_image_height);
 }
 
 #endif /* CAMERA_H_ */

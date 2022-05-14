@@ -48,8 +48,8 @@
 */
 
 #include "client.h"
-#include <geometry_msgs/Transform.h>
-#include "visp_hand2eye_calibration/TransformArray.h"
+#include <geometry_msgs/msg/transform.hpp>
+#include "visp_hand2eye_calibration/msg/transform_array.hpp"
 #include <visp_bridge/3dpose.h>
 #include "names.h"
 
@@ -58,32 +58,32 @@
 
 namespace visp_hand2eye_calibration
 {
-Client::Client()
+Client::Client(const rclcpp::NodeOptions & options) : Node("hand2eyeclient", options)
 {
-  camera_object_publisher_
-      = n_.advertise<geometry_msgs::Transform> (visp_hand2eye_calibration::camera_object_topic, 1000);
-  world_effector_publisher_
-      = n_.advertise<geometry_msgs::Transform> (visp_hand2eye_calibration::world_effector_topic, 1000);
+  camera_object_publisher_ = this->create_publisher<geometry_msgs::msg::Transform>(visp_hand2eye_calibration::camera_object_topic, 1000 );
+  world_effector_publisher_ = this->create_publisher<geometry_msgs::msg::Transform>(visp_hand2eye_calibration::world_effector_topic, 1000 );
 
-  reset_service_
-      = n_.serviceClient<visp_hand2eye_calibration::reset> (visp_hand2eye_calibration::reset_service);
-  compute_effector_camera_service_
-      = n_.serviceClient<visp_hand2eye_calibration::compute_effector_camera> (
-                                                                                      visp_hand2eye_calibration::compute_effector_camera_service);
-  compute_effector_camera_quick_service_
-      = n_.serviceClient<visp_hand2eye_calibration::compute_effector_camera_quick> (
-                                                                                            visp_hand2eye_calibration::compute_effector_camera_quick_service);
+  reset_service_ = this->create_client<visp_hand2eye_calibration::srv::Reset> (visp_hand2eye_calibration::reset_service);
+  compute_effector_camera_service_ = this->create_client<visp_hand2eye_calibration::srv::ComputeEffectorCamera> (visp_hand2eye_calibration::compute_effector_camera_service);
+  compute_effector_camera_quick_service_ = this->create_client<visp_hand2eye_calibration::srv::ComputeEffectorCameraQuick> (visp_hand2eye_calibration::compute_effector_camera_quick_service);
 }
 
 void Client::initAndSimulate()
 {
-  ROS_INFO("Waiting for topics...");
-  ros::Duration(1.).sleep();
-  while(!reset_service_.call(reset_comm)){
-    if(!ros::ok()) return;
-    ros::Duration(1).sleep();
-  }
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for topics...");
+  rclcpp::sleep_for( std::chrono::seconds( 1 ) );
+  
+  while( true ) {
+    auto reset_comm = std::make_shared<visp_hand2eye_calibration::srv::Reset::Request>();
+    auto reset_comm_result = reset_service_->async_send_request(reset_comm);
+  
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), reset_comm_result) == rclcpp::FutureReturnCode::SUCCESS){
+      break;
+    }
 
+    if(!rclcpp::ok()) return;
+    rclcpp::sleep_for( std::chrono::seconds( 1 ) );
+  }
 
   // We want to calibrate the hand to eye extrinsic camera parameters from 6 couple of poses: cMo and wMe
   const int N = 6;
@@ -100,9 +100,11 @@ void Client::initAndSimulate()
   erc[2] = vpMath::rad(25); // 25 deg
 
   eMc.buildFrom(etc, erc);
-  ROS_INFO("1) GROUND TRUTH:");
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "1) GROUND TRUTH:");
 
-  ROS_INFO_STREAM("hand to eye transformation: " <<std::endl<<visp_bridge::toGeometryMsgsTransform(eMc)<<std::endl);
+  //RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "hand to eye transformation: " <<std::endl<<visp_bridge::toGeometryMsgsTransform(eMc)<<std::endl);
+
+  emc_quick_comm = std::make_shared<visp_hand2eye_calibration::srv::ComputeEffectorCameraQuick::Request>();
 
   vpColVector v_c(6); // camera velocity used to produce 6 simulated poses
   for (int i = 0; i < N; i++)
@@ -135,17 +137,17 @@ void Client::initAndSimulate()
 
     }
 
-    geometry_msgs::Transform pose_c_o;
+    geometry_msgs::msg::Transform pose_c_o;
     pose_c_o = visp_bridge::toGeometryMsgsTransform(cMo);
-    geometry_msgs::Transform pose_w_e;
+    geometry_msgs::msg::Transform pose_w_e;
     pose_w_e = visp_bridge::toGeometryMsgsTransform(wMe);
-    camera_object_publisher_.publish(pose_c_o);
-    world_effector_publisher_.publish(pose_w_e);
-    emc_quick_comm.request.camera_object.transforms.push_back(pose_c_o);
-    emc_quick_comm.request.world_effector.transforms.push_back(pose_w_e);
+    camera_object_publisher_->publish(pose_c_o);
+    world_effector_publisher_->publish(pose_w_e);
+    emc_quick_comm.get()->camera_object.transforms.push_back(pose_c_o);
+    emc_quick_comm.get()->world_effector.transforms.push_back(pose_w_e);
 
   }
-  ros::Duration(1.).sleep();
+  rclcpp::sleep_for( std::chrono::seconds( 1 ) );
 
 }
 
@@ -153,14 +155,16 @@ void Client::computeUsingQuickService()
 {
   vpHomogeneousMatrix eMc;
   vpThetaUVector erc;
-  ROS_INFO("2) QUICK SERVICE:");
-  if (compute_effector_camera_quick_service_.call(emc_quick_comm))
-  {
-    ROS_INFO_STREAM("hand_camera: "<< std::endl << emc_quick_comm.response.effector_camera);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "2) QUICK SERVICE:");
+  
+  auto emc_quick_comm_result = compute_effector_camera_quick_service_->async_send_request(emc_quick_comm);
+
+  if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), emc_quick_comm_result) == rclcpp::FutureReturnCode::SUCCESS){
+    RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "hand_camera: "<< std::endl /*<< emc_quick_comm_result.get()->effector_camera */);
   }
   else
   {
-    ROS_ERROR("Failed to call service");
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service");
   }
 }
 
@@ -168,18 +172,21 @@ void Client::computeFromTopicStream()
 {
   vpHomogeneousMatrix eMc;
   vpThetaUVector erc;
-  ROS_INFO("3) TOPIC STREAM:");
-  if (compute_effector_camera_service_.call(emc_comm))
-  {
-    ROS_INFO_STREAM("hand_camera: " << std::endl << emc_comm.response.effector_camera);
+  RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "3) TOPIC STREAM:");
+  
+  auto emc_comm = std::make_shared<visp_hand2eye_calibration::srv::ComputeEffectorCamera::Request>();
+  auto emc_comm_result = compute_effector_camera_service_->async_send_request(emc_comm);
+
+  if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), emc_comm_result) == rclcpp::FutureReturnCode::SUCCESS){
+    RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "hand_camera: " << std::endl /* << emc_comm_result.get()->effector_camera */);
   }
   else
   {
-    ROS_ERROR("Failed to call service");
+    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service");
   }
 
 }
-}
+} //namespace
 
 /*
  * Local variables:

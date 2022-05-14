@@ -46,9 +46,9 @@
  \file image_processing.h
  \brief 
  */
-#include "ros/ros.h"
-#include "sensor_msgs/Image.h"
-#include "sensor_msgs/SetCameraInfo.h"
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/image.hpp"
+#include "sensor_msgs/srv/set_camera_info.hpp"
 #include "visp/vpImage.h"
 #include "visp/vpPoint.h"
 #include "visp/vpCameraParameters.h"
@@ -56,24 +56,27 @@
 #include <string>
 #include <boost/thread/thread.hpp>
 
+#include "visp_camera_calibration/msg/calib_point_array.hpp"
+#include "visp_camera_calibration/msg/calib_point.hpp"
+#include "visp_camera_calibration/srv/calibrate.hpp"
 
 #ifndef __visp_camera_calibration_IMAGE_PROCESSING_H__
 #define __visp_camera_calibration_IMAGE_PROCESSING_H__
 namespace visp_camera_calibration
 {
-class ImageProcessing
+class ImageProcessing : public rclcpp::Node
 {
-  ros::NodeHandle n_;
-  ros::AsyncSpinner spinner_;
+  //ros::AsyncSpinner spinner_;
 
   unsigned long queue_size_;
   bool pause_image_;
 
-  ros::Subscriber raw_image_subscriber_;
-  ros::Publisher point_correspondence_publisher_;
-
-  ros::ServiceServer set_camera_info_bis_service_;
-  ros::ServiceClient calibrate_service_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr raw_image_subscriber_;
+  rclcpp::Publisher<visp_camera_calibration::msg::CalibPointArray>::SharedPtr point_correspondence_publisher_;
+  
+  rclcpp::Client<visp_camera_calibration::srv::Calibrate>::SharedPtr calibrate_service_;
+  
+  rclcpp::Service<sensor_msgs::srv::SetCameraInfo>::SharedPtr set_camera_info_bis_service_;
 
   vpImage<unsigned char> img_;
 
@@ -84,6 +87,11 @@ class ImageProcessing
   
   bool is_initialized;
   
+  std::string calibration_path_;
+  double gray_level_precision_;
+  double size_precision_;
+  bool pause_at_each_frame_;
+
   void init();
   /*!
     \brief callback corresponding to the raw_image topic.
@@ -93,24 +101,16 @@ class ImageProcessing
 
     \param image_and_points: image of the grid and selected keypoints to compute on
    */
-  void rawImageCallback(const sensor_msgs::Image::ConstPtr& image);
+  void rawImageCallback(const sensor_msgs::msg::Image::SharedPtr image);
 
-  /*!
-    \brief service displaying.
-
-   */
-  bool setCameraInfoBisCallback(sensor_msgs::SetCameraInfo::Request  &req,
-                             sensor_msgs::SetCameraInfo::Response &res);
 public:
-  //! subscriber type declaration for raw_image topic subscriber
-  typedef boost::function<void (const sensor_msgs::Image::ConstPtr& )>
-    raw_image_subscriber_callback_t;
 
   //! service type declaration for calibrate service
-    typedef boost::function<bool (sensor_msgs::SetCameraInfo::Request&,sensor_msgs::SetCameraInfo::Response& res)>
-      set_camera_info_bis_service_callback_t;
+  bool setCameraInfoBisCallback(const std::shared_ptr<rmw_request_id_t> request_header, 
+      const std::shared_ptr<sensor_msgs::srv::SetCameraInfo::Request> req,
+      std::shared_ptr<sensor_msgs::srv::SetCameraInfo::Response> res);
 
-  ImageProcessing();
+  ImageProcessing(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
   void interface();
 
   virtual ~ImageProcessing();

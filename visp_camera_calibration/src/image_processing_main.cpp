@@ -48,13 +48,13 @@
 */
 
 #include "image_processing.h"
-#include "ros/ros.h"
+#include "rclcpp/rclcpp.hpp"
 
 
 int main(int argc,char** argv){
-  ros::init(argc, argv, "image_processing");
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<visp_camera_calibration::ImageProcessing>());
+  rclcpp::shutdown();
 
-  visp_camera_calibration::ImageProcessing proc;
-  proc.interface();
   return 0;
 }

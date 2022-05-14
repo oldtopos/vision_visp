@@ -48,16 +48,18 @@
 */
 
 #include "client.h"
-#include "ros/ros.h"
+#include "rclcpp/rclcpp.hpp"
 
 int main(int argc,char**argv){
-  ros::init(argc, argv, "client");
+  rclcpp::init(argc, argv);
+  
+  auto ct = std::make_shared<visp_hand2eye_calibration::Client>();
+  
+  ct->initAndSimulate();
 
-  visp_hand2eye_calibration::Client ct;
-
-  ct.initAndSimulate();
-
-  ct.computeUsingQuickService();
-  ct.computeFromTopicStream();
+  ct->computeUsingQuickService();
+  ct->computeFromTopicStream();
+  
+  rclcpp::shutdown();
   return 0 ;
 }

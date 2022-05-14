@@ -2,14 +2,16 @@
 # define VISP_TRACKER_CONVERSION_HH
 # include <boost/optional.hpp>
 
-# include <ros/ros.h>
+# include <rclcpp/rclcpp.hpp>
 
-# include <geometry_msgs/Transform.h>
-# include <sensor_msgs/Image.h>
-# include <sensor_msgs/CameraInfo.h>
-# include <tf/transform_datatypes.h>
+# include <geometry_msgs/msg/transform.hpp>
+# include <geometry_msgs/msg/pose.hpp>
+# include <sensor_msgs/msg/image.hpp>
+# include <sensor_msgs/msg/camera_info.hpp>
+# include <tf2/transform_datatypes.h>
+# include <tf2/LinearMath/Transform.h>
 
-# include <visp_tracker/Init.h>
+# include <visp_tracker/srv/init.hpp>
 
 # include <visp3/core/vpConfig.h>
 # include <visp3/mbt/vpMbGenericTracker.h>
@@ -30,7 +32,7 @@
 /// \param dst ViSP destination image
 /// \param src ROS source image
 void rosImageToVisp(vpImage<unsigned char>& dst,
-                    const sensor_msgs::Image::ConstPtr& src);
+                    const sensor_msgs::msg::Image::ConstPtr& src);
 
 /// \brief Convert a ViSP image into a ROS one.
 ///
@@ -42,7 +44,7 @@ void rosImageToVisp(vpImage<unsigned char>& dst,
 ///
 /// \param dst ROS destination image
 /// \param src ViSP source image
-void vispImageToRos(sensor_msgs::Image& dst,
+void vispImageToRos(sensor_msgs::msg::Image& dst,
                     const vpImage<unsigned char>& src);
 
 std::string convertVpMbTrackerToRosMessage(const vpMbGenericTracker &tracker);
@@ -51,42 +53,42 @@ std::string convertVpMeToRosMessage(const vpMbGenericTracker &tracker, const vpM
 
 std::string convertVpKltOpencvToRosMessage(const vpMbGenericTracker &tracker, const vpKltOpencv& klt);
 
-void vpHomogeneousMatrixToTransform(geometry_msgs::Transform& dst,
+void vpHomogeneousMatrixToTransform(geometry_msgs::msg::Transform& dst,
                                     const vpHomogeneousMatrix& src);
 
 void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
-                                    const geometry_msgs::Transform& src);
+                                    const geometry_msgs::msg::Transform& src);
 
 void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
-                                    const tf::Transform& src);
+                                    const tf2::Transform& src);
 
 void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
-                                    const geometry_msgs::Pose& src);
+                                    const geometry_msgs::msg::Pose& src);
 
 void convertVpMbTrackerToInitRequest(const vpMbGenericTracker &tracker,
-                                     visp_tracker::Init& srv);
+                                     std::shared_ptr<visp_tracker::srv::Init::Request> srv);
 
-void convertInitRequestToVpMbTracker(const visp_tracker::Init::Request& req,
+void convertInitRequestToVpMbTracker(const std::shared_ptr<visp_tracker::srv::Init::Request> req,
                                      vpMbGenericTracker &tracker);
 
 void convertVpMeToInitRequest(const vpMe& moving_edge,
                               const vpMbGenericTracker &tracker,
-                              visp_tracker::Init& srv);
+                              std::shared_ptr<visp_tracker::srv::Init::Request> srv);
 
-void convertInitRequestToVpMe(const visp_tracker::Init::Request& req,
+void convertInitRequestToVpMe(const std::shared_ptr<visp_tracker::srv::Init::Request> req,
                               vpMbGenericTracker &tracker,
                               vpMe& moving_edge);
 
 void convertVpKltOpencvToInitRequest(const vpKltOpencv& klt,
                                      const vpMbGenericTracker &tracker,
-                                     visp_tracker::Init& srv);
+                                     std::shared_ptr<visp_tracker::srv::Init::Request> srv);
 
-void convertInitRequestToVpKltOpencv(const visp_tracker::Init::Request& req,
+void convertInitRequestToVpKltOpencv(const std::shared_ptr<visp_tracker::srv::Init::Request> req,
                                      vpMbGenericTracker &tracker,
                                      vpKltOpencv& klt);
 
 void initializeVpCameraFromCameraInfo(vpCameraParameters& cam,
-                                      sensor_msgs::CameraInfoConstPtr info);
+                                      std::shared_ptr<sensor_msgs::msg::CameraInfo> info);
 
 // Dynamic reconfigure template functions
 template<class ConfigType>

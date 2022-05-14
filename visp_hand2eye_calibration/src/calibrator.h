@@ -49,14 +49,14 @@
 
 #ifndef __visp_hand2eye_calibration_CALIBRATOR_H__
 #define __visp_hand2eye_calibration_CALIBRATOR_H__
-#include "ros/ros.h"
+#include "rclcpp/rclcpp.hpp"
 
-#include "geometry_msgs/Transform.h"
-#include "visp_hand2eye_calibration/TransformArray.h"
-#include "visp_hand2eye_calibration/compute_effector_camera_quick.h"
-#include "visp_hand2eye_calibration/compute_effector_camera.h"
-#include "visp_hand2eye_calibration/reset.h"
-#include "image_proc/advertisement_checker.h"
+#include "geometry_msgs/msg/transform.hpp"
+#include "visp_hand2eye_calibration/msg/transform_array.hpp"
+#include "visp_hand2eye_calibration/srv/compute_effector_camera_quick.hpp"
+#include "visp_hand2eye_calibration/srv/compute_effector_camera.hpp"
+#include "visp_hand2eye_calibration/srv/reset.hpp"
+//#include "image_proc/advertisement_checker.h"
 
 #include <vector>
 
@@ -64,19 +64,26 @@ class vpHomogeneousMatrix;
 
 namespace visp_hand2eye_calibration{
  
-  class Calibrator{
+  class Calibrator : public rclcpp::Node {
   private:    
     //subscribers. Must be class-persistant
-    ros::ServiceServer compute_effector_camera_service_;
-    ros::ServiceServer compute_effector_camera_quick_service_;
-    ros::ServiceServer reset_service_;
-    ros::Subscriber camera_object_subscriber_;
-    ros::Subscriber world_effector_subscriber_;
-    image_proc::AdvertisementChecker check_inputs_;
+    rclcpp::Service<visp_hand2eye_calibration::srv::ComputeEffectorCamera>::SharedPtr compute_effector_camera_service_;
+    rclcpp::Service<visp_hand2eye_calibration::srv::ComputeEffectorCameraQuick>::SharedPtr compute_effector_camera_quick_service_;
+    rclcpp::Service<visp_hand2eye_calibration::srv::Reset>::SharedPtr reset_service_;
+
+    //ros::ServiceServer compute_effector_camera_service_;
+    //ros::ServiceServer compute_effector_camera_quick_service_;
+    //ros::ServiceServer reset_service_;
+    
+    rclcpp::Subscription<geometry_msgs::msg::Transform>::SharedPtr camera_object_subscriber_;
+    rclcpp::Subscription<geometry_msgs::msg::Transform>::SharedPtr world_effector_subscriber_;
+
+    //ros::Subscriber camera_object_subscriber_;
+    //ros::Subscriber world_effector_subscriber_;
+    //image_proc::AdvertisementChecker check_inputs_;
 
     std::vector<vpHomogeneousMatrix> cMo_vec_;
     std::vector<vpHomogeneousMatrix> wMe_vec_;
-    ros::NodeHandle n_;
 
     unsigned int queue_size_;
 
@@ -87,7 +94,9 @@ namespace visp_hand2eye_calibration{
       A service may compute the calibration on all recieved elements later.
       \param trans: camera->object transformation
      */
-    void cameraObjectCallback(const geometry_msgs::Transform::ConstPtr& trans);
+    //void cameraObjectCallback(const geometry_msgs::Transform::ConstPtr& trans);
+    void cameraObjectCallback(const geometry_msgs::msg::Transform::SharedPtr trans) ;
+
     /*!
       \brief callback corresponding to the world->effector topic.
 
@@ -95,7 +104,8 @@ namespace visp_hand2eye_calibration{
       A service may compute the calibration on all recieved elements later.
       \param trans: world->effector transformation
      */
-    void worldEffectorCallback(const geometry_msgs::Transform::ConstPtr& trans);
+    //void worldEffectorCallback(const geometry_msgs::Transform::ConstPtr& trans);
+    void worldEffectorCallback(const geometry_msgs::msg::Transform::SharedPtr trans) ;
 
      /*!
       \brief service computing world->effector transformation from accumulated data.
@@ -104,8 +114,10 @@ namespace visp_hand2eye_calibration{
       to the number of recorded world->effector transformations.
       If it is not equal, the service fails.
      */
-    bool computeEffectorCameraCallback(visp_hand2eye_calibration::compute_effector_camera::Request  &req,
-					 visp_hand2eye_calibration::compute_effector_camera::Response &res );
+//    bool computeEffectorCameraCallback(visp_hand2eye_calibration::compute_effector_camera::Request  &req,
+//					 visp_hand2eye_calibration::compute_effector_camera::Response &res );
+    void computeEffectorCameraCallback(const std::shared_ptr<rmw_request_id_t> request_header, const std::shared_ptr<visp_hand2eye_calibration::srv::ComputeEffectorCamera::Request > req,
+         std::shared_ptr<visp_hand2eye_calibration::srv::ComputeEffectorCamera::Response> res);
 
     /*!
       \brief service computing world->effector transformation from parameter-passed data.
@@ -114,33 +126,23 @@ namespace visp_hand2eye_calibration{
       to the number of recorded world->effector transformations.
       If it is not equal, the service fails.
      */
-    bool computeEffectorCameraQuickCallback(visp_hand2eye_calibration::compute_effector_camera_quick::Request  &req,
-					       visp_hand2eye_calibration::compute_effector_camera_quick::Response &res );
+//    bool computeEffectorCameraQuickCallback(visp_hand2eye_calibration::compute_effector_camera_quick::Request  &req,
+//					       visp_hand2eye_calibration::compute_effector_camera_quick::Response &res );
+    void computeEffectorCameraQuickCallback(const std::shared_ptr<rmw_request_id_t> request_header, const std::shared_ptr<visp_hand2eye_calibration::srv::ComputeEffectorCameraQuick::Request > req,
+         std::shared_ptr<visp_hand2eye_calibration::srv::ComputeEffectorCameraQuick::Response> res);
     /*!
       \brief service reseting the acumulated data
      */
-    bool resetCallback(visp_hand2eye_calibration::reset::Request  &req,
-			visp_hand2eye_calibration::reset::Response &res );
+//    bool resetCallback(visp_hand2eye_calibration::reset::Request  &req,
+//			visp_hand2eye_calibration::reset::Response &res );
+    void resetCallback(const std::shared_ptr<rmw_request_id_t> request_header, const std::shared_ptr<visp_hand2eye_calibration::srv::Reset::Request > req,
+         std::shared_ptr<visp_hand2eye_calibration::srv::Reset::Response> res);
+         
   public:
-    //! service type declaration for effector->camera computation service
-    typedef boost::function<bool (visp_hand2eye_calibration::compute_effector_camera::Request&,visp_hand2eye_calibration::compute_effector_camera::Response& res)>
-      compute_effector_camera_service_callback_t;
-    //! service type declaration for quick effector->camera computation service
-    typedef boost::function<bool (visp_hand2eye_calibration::compute_effector_camera_quick::Request&,visp_hand2eye_calibration::compute_effector_camera_quick::Response& res)>
-      compute_effector_camera_quick_service_callback_t;
-    //! service type declaration for reset service
-    typedef boost::function<bool (visp_hand2eye_calibration::reset::Request&,visp_hand2eye_calibration::reset::Response& res)>
-      reset_service_callback_t;
-    
-    //! subscriber type declaration for camera->object topic subscriber
-    typedef boost::function<void (const geometry_msgs::Transform::ConstPtr& )>
-      camera_object_subscriber_callback_t;
-    //! subscriber type declaration for world->effector topic subscriber
-    typedef boost::function<void (const geometry_msgs::Transform::ConstPtr& trans)>
-      world_effector_subscriber_t;
 
     //! advertises services and subscribes to topics
-    Calibrator();
+    Calibrator(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+
     //! spins the ros node
     void spin();
     ~Calibrator();

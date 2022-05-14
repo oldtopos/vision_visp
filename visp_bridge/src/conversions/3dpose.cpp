@@ -64,7 +64,7 @@
 namespace visp_bridge{
 
 #if VISP_VERSION_INT > (2<<16 | 6<<8 | 1)
-  vpHomogeneousMatrix toVispHomogeneousMatrix(const geometry_msgs::Pose& pose){
+  vpHomogeneousMatrix toVispHomogeneousMatrix(const geometry_msgs::msg::Pose& pose){
     vpHomogeneousMatrix mat;
     vpTranslationVector vec(pose.position.x,pose.position.y,pose.position.z);
     vpQuaternionVector q(pose.orientation.x,pose.orientation.y,pose.orientation.z,pose.orientation.w);
@@ -73,7 +73,7 @@ namespace visp_bridge{
     return mat;
   }
 
-  vpHomogeneousMatrix toVispHomogeneousMatrix(const geometry_msgs::Transform& trans){
+  vpHomogeneousMatrix toVispHomogeneousMatrix(const geometry_msgs::msg::Transform& trans){
      vpHomogeneousMatrix mat;
      vpTranslationVector vec(trans.translation.x,trans.translation.y,trans.translation.z);
      vpQuaternionVector q(trans.rotation.x,trans.rotation.y,trans.rotation.z,trans.rotation.w);
@@ -82,8 +82,8 @@ namespace visp_bridge{
      return mat;
    }
 
-  geometry_msgs::Transform toGeometryMsgsTransform(const vpHomogeneousMatrix& mat){
-    geometry_msgs::Transform trans;
+  geometry_msgs::msg::Transform toGeometryMsgsTransform(const vpHomogeneousMatrix& mat){
+    geometry_msgs::msg::Transform trans;
     vpQuaternionVector q;
     mat.extract(q);
     trans.rotation.x = q.x();
@@ -99,8 +99,8 @@ namespace visp_bridge{
     return trans;
   }
 
-  geometry_msgs::Pose toGeometryMsgsPose(const vpHomogeneousMatrix& mat){
-    geometry_msgs::Pose pose;
+  geometry_msgs::msg::Pose toGeometryMsgsPose(const vpHomogeneousMatrix& mat){
+    geometry_msgs::msg::Pose pose;
 
 	vpThetaUVector tu(mat);
 	vpColVector u;
@@ -125,7 +125,7 @@ namespace visp_bridge{
 
 
 #else
-  vpHomogeneousMatrix toVispHomogeneousMatrix(const geometry_msgs::Transform& trans){
+  vpHomogeneousMatrix toVispHomogeneousMatrix(const geometry_msgs::msg::Transform& trans){
       vpHomogeneousMatrix mat;
       vpTranslationVector vec(trans.translation.x,trans.translation.y,trans.translation.z);
       vpRotationMatrix rmat;
@@ -151,8 +151,8 @@ namespace visp_bridge{
       return mat;
     }
 
-    geometry_msgs::Transform toGeometryMsgsTransform(vpHomogeneousMatrix& mat){
-      geometry_msgs::Transform trans;
+    geometry_msgs::msg::Transform toGeometryMsgsTransform(vpHomogeneousMatrix& mat){
+      geometry_msgs::msg::Transform trans;
       vpRotationMatrix rmat;
       mat.extract(rmat);
       vpQuaternionVector q(rmat);

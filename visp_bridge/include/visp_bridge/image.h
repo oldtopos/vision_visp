@@ -53,7 +53,7 @@
 #ifndef __VISP_BRIDGE_IMAGE_H__
 #define __VISP_BRIDGE_IMAGE_H__
 
-#include "sensor_msgs/Image.h"
+#include "sensor_msgs/msg/image.hpp"
 #include "visp/vpImage.h"
 #include "visp/vpRGBa.h"
 
@@ -63,14 +63,14 @@ namespace visp_bridge{
     \param src: image in ViSP format.
     \return: image in ROS/sensor_msgs format.
   */
-  sensor_msgs::Image toSensorMsgsImage(const vpImage<unsigned char>& src);
-  sensor_msgs::Image toSensorMsgsImage(const vpImage<vpRGBa>& src);
+  sensor_msgs::msg::Image toSensorMsgsImage(const vpImage<unsigned char>& src);
+  sensor_msgs::msg::Image toSensorMsgsImage(const vpImage<vpRGBa>& src);
   /*!
     \brief Converts a sensor_msgs::Image to a ViSP image (vpImage). Only works for greyscale images
     \param src: image in ROS/sensor_msgs format.
     \return: image in ViSP format.
   */
-  vpImage<unsigned char> toVispImage(const sensor_msgs::Image& src);
-  vpImage<vpRGBa> toVispImageRGBa(const sensor_msgs::Image& src);
+  vpImage<unsigned char> toVispImage(const sensor_msgs::msg::Image& src);
+  vpImage<vpRGBa> toVispImageRGBa(const sensor_msgs::msg::Image& src);
 }
 #endif /* IMAGE_H_ */

@@ -49,8 +49,8 @@
 
 #include <stdexcept>
 
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/image_encodings.hpp>
 #include <boost/format.hpp>
 
 #include "visp_bridge/image.h"
@@ -58,9 +58,9 @@
 namespace visp_bridge
 {
 
-sensor_msgs::Image toSensorMsgsImage(const vpImage<unsigned char>& src)
+sensor_msgs::msg::Image toSensorMsgsImage(const vpImage<unsigned char>& src)
 {
-  sensor_msgs::Image dst;
+  sensor_msgs::msg::Image dst;
   dst.width = src.getWidth();
   dst.height = src.getHeight();
   dst.encoding = sensor_msgs::image_encodings::MONO8;
@@ -71,7 +71,7 @@ sensor_msgs::Image toSensorMsgsImage(const vpImage<unsigned char>& src)
   return dst;
 }
 
-vpImage<unsigned char> toVispImage(const sensor_msgs::Image& src)
+vpImage<unsigned char> toVispImage(const sensor_msgs::msg::Image& src)
 {
   using sensor_msgs::image_encodings::MONO8;
   using sensor_msgs::image_encodings::RGB8;
@@ -100,7 +100,7 @@ vpImage<unsigned char> toVispImage(const sensor_msgs::Image& src)
   return dst;
 }
 
-vpImage<vpRGBa> toVispImageRGBa(const sensor_msgs::Image& src)
+vpImage<vpRGBa> toVispImageRGBa(const sensor_msgs::msg::Image& src)
 {
   using sensor_msgs::image_encodings::MONO8;
   using sensor_msgs::image_encodings::RGB8;
@@ -130,8 +130,8 @@ vpImage<vpRGBa> toVispImageRGBa(const sensor_msgs::Image& src)
   return dst;
 }
 
-sensor_msgs::Image toSensorMsgsImage(const vpImage<vpRGBa>& src){
-  sensor_msgs::Image dst;
+sensor_msgs::msg::Image toSensorMsgsImage(const vpImage<vpRGBa>& src){
+  sensor_msgs::msg::Image dst;
   dst.width = src.getWidth();
   dst.height = src.getHeight();
   dst.encoding = sensor_msgs::image_encodings::RGB8;

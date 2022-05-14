@@ -47,77 +47,77 @@
   \brief conversions between ROS and ViSP structures representing camera parameters
 */
 
-#include <sensor_msgs/distortion_models.h>
+#include <sensor_msgs/distortion_models.hpp>
 
 #include "visp_bridge/camera.h"
 
 namespace visp_bridge{
 
-vpCameraParameters toVispCameraParameters(const sensor_msgs::CameraInfo& cam_info){
+vpCameraParameters toVispCameraParameters(const sensor_msgs::msg::CameraInfo& cam_info){
   vpCameraParameters cam;
   // Check that the camera is calibrated, as specified in the
   // sensor_msgs/CameraInfo message documentation.
-  if (cam_info.K.size() != 3 * 3 || cam_info.K[0] == 0.)
+  if (cam_info.k.size() != 3 * 3 || cam_info.k[0] == 0.)
     throw std::runtime_error ("uncalibrated camera");
 
   // Check matrix size.
-  if (cam_info.P.size() != 3 * 4)
+  if (cam_info.p.size() != 3 * 4)
     throw std::runtime_error
       ("camera calibration P matrix has an incorrect size");
 
   if (cam_info.distortion_model.empty ())
     {
-      const double& px = cam_info.K[0 * 3 + 0];
-      const double& py = cam_info.K[1 * 3 + 1];
-      const double& u0 = cam_info.K[0 * 3 + 2];
-      const double& v0 = cam_info.K[1 * 3 + 2];
+      const double& px = cam_info.k[0 * 3 + 0];
+      const double& py = cam_info.k[1 * 3 + 1];
+      const double& u0 = cam_info.k[0 * 3 + 2];
+      const double& v0 = cam_info.k[1 * 3 + 2];
       cam.initPersProjWithoutDistortion(px, py, u0, v0);
       return cam;
     }
 
   if (cam_info.distortion_model == sensor_msgs::distortion_models::PLUMB_BOB)
     {
-      const double& px = cam_info.P[0 * 4 + 0];
-      const double& py = cam_info.P[1 * 4 + 1];
-      const double& u0 = cam_info.P[0 * 4 + 2];
-      const double& v0 = cam_info.P[1 * 4 + 2];
+      const double& px = cam_info.p[0 * 4 + 0];
+      const double& py = cam_info.p[1 * 4 + 1];
+      const double& u0 = cam_info.p[0 * 4 + 2];
+      const double& v0 = cam_info.p[1 * 4 + 2];
       cam.initPersProjWithoutDistortion(px, py, u0, v0);
-      //cam.initPersProjWithDistortion(px, py, u0, v0, -cam_info.D[0], cam_info.D[0]);
+      //cam.initPersProjWithDistortion(px, py, u0, v0, -cam_info.d[0], cam_info.d[0]);
       return cam;
     }
 
   throw std::runtime_error ("unsupported distortion model");
 
- // return vpCameraParameters(cam_info.P[0 * 4 + 0],cam_info.P[1 * 4 + 1],cam_info.P[0 * 4 + 2],cam_info.P[1 * 4 + 2],-cam_info.D[0],cam_info.D[0]);
+ // return vpCameraParameters(cam_info.p[0 * 4 + 0],cam_info.p[1 * 4 + 1],cam_info.p[0 * 4 + 2],cam_info.p[1 * 4 + 2],-cam_info.d[0],cam_info.d[0]);
 }
 
-  sensor_msgs::CameraInfo toSensorMsgsCameraInfo(vpCameraParameters& cam_info, unsigned int cam_image_width, unsigned int cam_image_height ){
-      sensor_msgs::CameraInfo ret;
+  sensor_msgs::msg::CameraInfo toSensorMsgsCameraInfo(vpCameraParameters& cam_info, unsigned int cam_image_width, unsigned int cam_image_height ){
+      sensor_msgs::msg::CameraInfo ret;
 
       std::vector<double> D(5);
       D[0]=cam_info.get_kdu();
       D[1] = D[2] = D[3] = D[4] = 0.;
-      ret.D = D;
-      ret.P.assign(0.);
-      ret.K.assign(0.);
-      ret.R.assign(0.);
+      ret.d = D;
+      std::fill<typename std::array<double, 9>::iterator, double>(ret.k.begin(), ret.k.end(), 0.0);
+      std::fill<typename std::array<double, 9>::iterator, double>(ret.r.begin(), ret.r.end(), 0.0);
+      std::fill<typename std::array<double, 12>::iterator, double>(ret.p.begin(), ret.p.end(), 0.0);
 
-      ret.R[0] = 1.;
-      ret.R[1 * 3 + 1] = 1.;
-      ret.R[2 * 3 + 2] = 1.;
+      ret.r[0] = 1.;
+      ret.r[1 * 3 + 1] = 1.;
+      ret.r[2 * 3 + 2] = 1.;
 
-      ret.P[0 * 4 + 0] = cam_info.get_px();
-      ret.P[1 * 4 + 1] = cam_info.get_py();
-      ret.P[0 * 4 + 2] = cam_info.get_u0();
-      ret.P[1 * 4 + 2] = cam_info.get_v0();
-      ret.P[2 * 4 + 2] = 1;
+      ret.p[0 * 4 + 0] = cam_info.get_px();
+      ret.p[1 * 4 + 1] = cam_info.get_py();
+      ret.p[0 * 4 + 2] = cam_info.get_u0();
+      ret.p[1 * 4 + 2] = cam_info.get_v0();
+      ret.p[2 * 4 + 2] = 1;
 
 
-      ret.K[0 * 3 + 0] = cam_info.get_px();
-      ret.K[1 * 3 + 1] = cam_info.get_py();
-      ret.K[0 * 3 + 2] = cam_info.get_u0();
-      ret.K[1 * 3 + 2] = cam_info.get_v0();
-      ret.K[2 * 3 + 2] = 1;
+      ret.k[0 * 3 + 0] = cam_info.get_px();
+      ret.k[1 * 3 + 1] = cam_info.get_py();
+      ret.k[0 * 3 + 2] = cam_info.get_u0();
+      ret.k[1 * 3 + 2] = cam_info.get_v0();
+      ret.k[2 * 3 + 2] = 1;
 
       ret.distortion_model = "plumb_bob";
       ret.binning_x = 0;

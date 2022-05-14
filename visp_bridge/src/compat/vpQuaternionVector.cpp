@@ -43,7 +43,7 @@
 #include <string.h>
 #include <algorithm>
 
-#include <ros/ros.h>
+//#include <ros/ros.h>
 #include <visp/vpConfig.h>
 #include <visp/vpMath.h>
 

@@ -1,5 +1,5 @@
-<?xml version="1.0"?>
-<package>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package  format="3">
   <name>visp_camera_calibration</name>
   <version>0.13.1</version>
 
@@ -17,23 +17,32 @@
   <build_depend>camera_calibration_parsers</build_depend> <!-- Write camera data to ini file -->
   <build_depend>geometry_msgs</build_depend>
   <build_depend>message_generation</build_depend>
-  <build_depend>roscpp</build_depend>
+  <build_depend>rclcpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_depend>rosidl_interface_packages</build_depend>
+
+
   <!-- catkin_lint produce an error arround build_depend visp. -->
   <!-- This error shouldn't be considered. If build_depend visp is removed, -->
   <!-- the package is not able to build on ros buildfarm. -->
   <build_depend>visp</build_depend>
   <build_depend>visp_bridge</build_depend>
 
-  <run_depend>camera_calibration_parsers</run_depend>
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>message_generation</run_depend>
-  <run_depend>message_runtime</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>std_msgs</run_depend>
-  <run_depend>visp</run_depend>
-  <run_depend>visp_bridge</run_depend>
-  <run_depend>rqt_console</run_depend>
+  <exec_depend>camera_calibration_parsers</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>message_generation</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>rclcpp</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>visp</exec_depend>
+  <exec_depend>visp_bridge</exec_depend>
+  <exec_depend>rqt_console</exec_depend>
+  <exec_depend>rosidl_interface_packages</exec_depend>
+
+    <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+  </export>
 </package>

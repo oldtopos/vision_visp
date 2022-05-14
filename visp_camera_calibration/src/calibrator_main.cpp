@@ -47,14 +47,14 @@
   \brief 
 */
 
+#include "rclcpp/rclcpp.hpp"
 #include "calibrator.h"
-#include "ros/ros.h"
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "calibrator");
-
-  visp_camera_calibration::Calibrator().spin();
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<visp_camera_calibration::Calibrator>());
+  rclcpp::shutdown();
 
   return 0;
 }
