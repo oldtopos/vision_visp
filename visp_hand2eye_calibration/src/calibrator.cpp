@@ -163,15 +163,15 @@ namespace visp_hand2eye_calibration
 
 
    // check_inputs_.start(topics, 60.0);
-    //if (!ros::ok())
-    //  return;
+    if (!rclcpp::ok())
+      return;
 
 
   }
 
   void Calibrator::spin()
   {
-    //ros::spin();
+    rclcpp::spin();
   }
   Calibrator::~Calibrator()
   {

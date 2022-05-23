@@ -213,7 +213,7 @@ void ImageProcessing::rawImageCallback(const sensor_msgs::msg::Image::SharedPtr 
       vpDisplay::displayRectangle(img_,0,0,img_.getWidth(),15,vpColor::black,true);
       vpDisplay::displayCharString(img_,10,10,boost::str(boost::format("click on point %1%") % (i+1)).c_str(),vpColor::red);
       vpDisplay::flush(img_);  
-      // while(ros::ok() && !vpDisplay::getClick(img_,ip,false));
+      while(rclcpp::ok() && !vpDisplay::getClick(img_,ip,false));
       
       d.initTracking(img_, ip);
 
@@ -264,8 +264,8 @@ void ImageProcessing::rawImageCallback(const sensor_msgs::msg::Image::SharedPtr 
           md.setSizePrecision(size_precision);
 
           md.initTracking(img_, ip);
-          //if(!ros::ok())
-					//	return;
+          if(!rclcpp::ok())
+						return;
 
           vpRect bbox = md.getBBox();
           vpImagePoint cog = md.getCog();
@@ -309,7 +309,7 @@ void ImageProcessing::rawImageCallback(const sensor_msgs::msg::Image::SharedPtr 
     vpDisplay::flush(img_);
 		
     vpMouseButton::vpMouseButtonType btn;
-    //while(ros::ok() && !vpDisplay::getClick(img_,ip,btn, false));
+    while(rclcpp::ok() && !vpDisplay::getClick(img_,ip,btn, false));
 		
     if(btn==vpMouseButton::button1)
       point_correspondence_publisher_->publish(calib_all_points);
@@ -325,12 +325,12 @@ void ImageProcessing::rawImageCallback(const sensor_msgs::msg::Image::SharedPtr 
 void ImageProcessing::interface()
 {
   vpImagePoint ip;
-  //while(ros::ok()){
-   // ros::spinOnce();
-  //  if(vpDisplay::getClick(img_,ip,false))
-  //    pause_image_ = true;
-  //}
-  //ros::waitForShutdown();
+  while(rclcpp::ok()){
+    rclcpp::spinOnce();
+    if(vpDisplay::getClick(img_,ip,false))
+      pause_image_ = true;
+  }
+  roclcpp::waitForShutdown();
 }
 
 ImageProcessing::~ImageProcessing()

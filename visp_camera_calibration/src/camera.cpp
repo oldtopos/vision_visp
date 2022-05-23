@@ -130,7 +130,7 @@ void Camera::sendVideo(){
   double size_precision = this->size_precision_;
 
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Click to start sending image data");
-  //while(ros::ok() && !vpDisplay::getClick(img_,false));
+  while(rclcpp::ok() && !vpDisplay::getClick(img_,false));
 
   for(unsigned int i=0;i<(unsigned int)reader_.getLastFrameIndex() /*&& ros::ok()*/;i++){
     reader_.acquire(img_);
@@ -152,7 +152,7 @@ void Camera::sendVideo(){
   RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "When finished selecting points, click on the camera window for calibration");
   vpDisplay::displayCharString(img_,img_.getHeight()/2+30,img_.getWidth()/4,"When finished selecting points, click here for calibration",vpColor::red);
   vpDisplay::flush(img_);
-  //while(ros::ok() && !vpDisplay::getClick(img_,false));
+  while(rclcpp::ok() && !vpDisplay::getClick(img_,false));
   auto calibrate_comm = std::make_shared<visp_camera_calibration::srv::Calibrate::Request>();
 
   calibrate_comm->method = vpCalibration::CALIB_VIRTUAL_VS_DIST;

@@ -24,6 +24,7 @@ find_package(image_proc REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(resource_retriever REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem thread)
 
 # ViSP cannot be found by Catkin.
@@ -56,8 +57,8 @@ rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_t
 
 # Library gathering libvisp_tracker used by all nodes.
 add_library(${PROJECT_NAME}_common
-#  src/lib${PROJECT_NAME}/callbacks.cpp
-#  src/lib${PROJECT_NAME}/callbacks.hh
+  src/lib${PROJECT_NAME}/callbacks.cpp
+  src/lib${PROJECT_NAME}/callbacks.hh
   src/lib${PROJECT_NAME}/conversion.cpp
   src/lib${PROJECT_NAME}/conversion.hh
   src/lib${PROJECT_NAME}/file.cpp
@@ -68,8 +69,8 @@ add_library(${PROJECT_NAME}_common
 #  src/lib${PROJECT_NAME}/tracker-client.hh
 #  src/lib${PROJECT_NAME}/tracker-viewer.cpp
 #  src/lib${PROJECT_NAME}/tracker-viewer.hh
-#  src/lib${PROJECT_NAME}/tracker.cpp
-#  src/lib${PROJECT_NAME}/tracker.hh
+  src/lib${PROJECT_NAME}/tracker.cpp
+  src/lib${PROJECT_NAME}/tracker.hh
 )
 
 target_link_libraries(${PROJECT_NAME}_common
@@ -77,7 +78,7 @@ target_link_libraries(${PROJECT_NAME}_common
   ${VISP_LIBRARIES}
   "${cpp_typesupport_target}"
   )
-ament_target_dependencies(${PROJECT_NAME}_common rclcpp std_msgs sensor_msgs geometry_msgs image_proc image_transport resource_retriever tf2)
+ament_target_dependencies(${PROJECT_NAME}_common rclcpp rclcpp_components std_msgs sensor_msgs geometry_msgs image_proc image_transport resource_retriever tf2 tf2_ros)
 
 ament_export_include_directories(include)
 

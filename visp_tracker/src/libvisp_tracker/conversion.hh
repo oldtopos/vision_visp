@@ -5,6 +5,7 @@
 # include <rclcpp/rclcpp.hpp>
 
 # include <geometry_msgs/msg/transform.hpp>
+# include <geometry_msgs/msg/transform_stamped.hpp>
 # include <geometry_msgs/msg/pose.hpp>
 # include <sensor_msgs/msg/image.hpp>
 # include <sensor_msgs/msg/camera_info.hpp>
@@ -32,7 +33,7 @@
 /// \param dst ViSP destination image
 /// \param src ROS source image
 void rosImageToVisp(vpImage<unsigned char>& dst,
-                    const sensor_msgs::msg::Image::ConstPtr& src);
+                    const sensor_msgs::msg::Image::ConstSharedPtr &src);
 
 /// \brief Convert a ViSP image into a ROS one.
 ///
@@ -44,7 +45,7 @@ void rosImageToVisp(vpImage<unsigned char>& dst,
 ///
 /// \param dst ROS destination image
 /// \param src ViSP source image
-void vispImageToRos(sensor_msgs::msg::Image& dst,
+void vispImageToRos(std::shared_ptr<sensor_msgs::msg::Image> dst,
                     const vpImage<unsigned char>& src);
 
 std::string convertVpMbTrackerToRosMessage(const vpMbGenericTracker &tracker);
@@ -53,17 +54,20 @@ std::string convertVpMeToRosMessage(const vpMbGenericTracker &tracker, const vpM
 
 std::string convertVpKltOpencvToRosMessage(const vpMbGenericTracker &tracker, const vpKltOpencv& klt);
 
-void vpHomogeneousMatrixToTransform(geometry_msgs::msg::Transform& dst,
+void vpHomogeneousMatrixToTransform(std::shared_ptr<geometry_msgs::msg::Transform> dst,
                                     const vpHomogeneousMatrix& src);
 
 void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
-                                    const geometry_msgs::msg::Transform& src);
+                                    const geometry_msgs::msg::Transform src);
 
 void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
-                                    const tf2::Transform& src);
+                                    const geometry_msgs::msg::TransformStamped src);
 
 void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
-                                    const geometry_msgs::msg::Pose& src);
+                                    const std::shared_ptr<tf2::Transform> src);
+
+void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
+                                    const std::shared_ptr<geometry_msgs::msg::Pose> src);
 
 void convertVpMbTrackerToInitRequest(const vpMbGenericTracker &tracker,
                                      std::shared_ptr<visp_tracker::srv::Init::Request> srv);
@@ -95,16 +99,16 @@ template<class ConfigType>
 void convertModelBasedSettingsConfigToVpMbTracker(const ConfigType& config,
                                                   vpMbGenericTracker &tracker)
 {
-  tracker.setAngleAppear(vpMath::rad(config.angle_appear));
-  tracker.setAngleDisappear(vpMath::rad(config.angle_disappear));
+  tracker.setAngleAppear(vpMath::rad(config.angle_appear_));
+  tracker.setAngleDisappear(vpMath::rad(config.angle_disappear_));
 }
 
 template<class ConfigType>
 void convertVpMbTrackerToModelBasedSettingsConfig(const vpMbGenericTracker &tracker,
                                                   ConfigType& config)
 {
-  config.angle_appear = vpMath::deg(tracker.getAngleAppear());
-  config.angle_disappear = vpMath::deg(tracker.getAngleDisappear());
+  config.angle_appear_ = vpMath::deg(tracker.getAngleAppear());
+  config.angle_disappear_ = vpMath::deg(tracker.getAngleDisappear());
 }
 
 template<class ConfigType>
@@ -112,14 +116,14 @@ void convertModelBasedSettingsConfigToVpMe(const ConfigType& config,
                                            vpMe& moving_edge,
                                            vpMbGenericTracker &tracker)
 {
-  tracker.setGoodMovingEdgesRatioThreshold(config.first_threshold);
-  moving_edge.setThreshold( config.threshold );
-  moving_edge.setMaskSize( config.mask_size );
-  moving_edge.setRange( config.range );
-  moving_edge.setMu1( config.mu1 );
-  moving_edge.setMu2( config.mu2 );
-  moving_edge.setSampleStep( config.sample_step );
-  moving_edge.setStrip( config.strip );
+  tracker.setGoodMovingEdgesRatioThreshold(config.first_threshold_);
+  moving_edge.setThreshold( config.threshold_ );
+  moving_edge.setMaskSize( config.mask_size_ );
+  moving_edge.setRange( config.range_ );
+  moving_edge.setMu1( config.mu1_ );
+  moving_edge.setMu2( config.mu2_ );
+  moving_edge.setSampleStep( config.sample_step_ );
+  moving_edge.setStrip( config.strip_ );
 
   //FIXME: not sure if this is needed.
   moving_edge.initMask();
@@ -132,14 +136,14 @@ void convertVpMeToModelBasedSettingsConfig(const vpMe& moving_edge,
                                            const vpMbGenericTracker &tracker,
                                            ConfigType& config)
 {
-  config.first_threshold = tracker.getGoodMovingEdgesRatioThreshold();
-  config.threshold = moving_edge.getThreshold();
-  config.mask_size = moving_edge.getMaskSize();
-  config.range = moving_edge.getRange();
-  config.mu1 = moving_edge.getMu1();
-  config.mu2 = moving_edge.getMu2();
-  config.sample_step = moving_edge.getSampleStep();
-  config.strip = moving_edge.getStrip();
+  config.first_threshold_ = tracker.getGoodMovingEdgesRatioThreshold();
+  config.threshold_ = moving_edge.getThreshold();
+  config.mask_size_ = moving_edge.getMaskSize();
+  config.range_ = moving_edge.getRange();
+  config.mu1_ = moving_edge.getMu1();
+  config.mu2_ = moving_edge.getMu2();
+  config.sample_step_ = moving_edge.getSampleStep();
+  config.strip_ = moving_edge.getStrip();
 }
 
 template<class ConfigType>
@@ -147,14 +151,14 @@ void convertModelBasedSettingsConfigToVpKltOpencv(const ConfigType& config,
                                                   vpKltOpencv& klt,
                                                   vpMbGenericTracker &tracker)
 {
-  klt.setMaxFeatures(config.max_features);
-  klt.setWindowSize(config.window_size);
-  klt.setQuality(config.quality);
-  klt.setMinDistance(config.min_distance);
-  klt.setHarrisFreeParameter(config.harris);
-  klt.setBlockSize(config.size_block);
-  klt.setPyramidLevels(config.pyramid_lvl);
-  tracker.setKltMaskBorder((unsigned)config.mask_border);
+  klt.setMaxFeatures(config.max_features_);
+  klt.setWindowSize(config.window_size_);
+  klt.setQuality(config.quality_);
+  klt.setMinDistance(config.min_distance_);
+  klt.setHarrisFreeParameter(config.harris_);
+  klt.setBlockSize(config.size_block_);
+  klt.setPyramidLevels(config.pyramid_lvl_);
+  tracker.setKltMaskBorder((unsigned)config.mask_border_);
 
   tracker.setKltOpencv(klt);
 }
@@ -164,14 +168,14 @@ void convertVpKltOpencvToModelBasedSettingsConfig(const vpKltOpencv& klt,
                                                   const vpMbGenericTracker &tracker,
                                                   ConfigType& config)
 {
-  config.max_features = klt.getMaxFeatures();
-  config.window_size = klt.getWindowSize();
-  config.quality = klt.getQuality();
-  config.min_distance = klt.getMinDistance();
-  config.harris = klt.getHarrisFreeParameter();
-  config.size_block = klt.getBlockSize();
-  config.pyramid_lvl = klt.getPyramidLevels();
-  config.mask_border = tracker.getKltMaskBorder();
+  config.max_features_ = klt.getMaxFeatures();
+  config.window_size_ = klt.getWindowSize();
+  config.quality_ = klt.getQuality();
+  config.min_distance_ = klt.getMinDistance();
+  config.harris_ = klt.getHarrisFreeParameter();
+  config.size_block_ = klt.getBlockSize();
+  config.pyramid_lvl_ = klt.getPyramidLevels();
+  config.mask_border_ = tracker.getKltMaskBorder();
 }
 
 #endif //! VISP_TRACKER_CONVERSION_HH

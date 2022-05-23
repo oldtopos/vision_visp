@@ -135,9 +135,7 @@ namespace visp_camera_calibration
 
 
     RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "" << cam);
-//    sensor_msgs::srv::SetCameraInfo set_camera_info_comm;
 
- //   set_camera_info_comm.camera_info = visp_bridge::toSensorMsgsCameraInfo(cam,req->sample_width,req->sample_height);
     auto request = std::make_shared<sensor_msgs::srv::SetCameraInfo::Request>();
     request->camera_info = visp_bridge::toSensorMsgsCameraInfo(cam,req->sample_width,req->sample_height);;
     
@@ -152,7 +150,7 @@ namespace visp_camera_calibration
     return;
   }
   void Calibrator::spin(){
-    //ros::spin();
+    rclcpp::spin();
   }
 
   Calibrator::~Calibrator()

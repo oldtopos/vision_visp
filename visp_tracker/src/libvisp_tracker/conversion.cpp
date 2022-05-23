@@ -19,7 +19,7 @@
 #include "conversion.hh"
 
 void rosImageToVisp(vpImage<unsigned char>& dst,
-                    const sensor_msgs::msg::Image::ConstPtr& src)
+                    const sensor_msgs::msg::Image::ConstSharedPtr &src)
 {
   using sensor_msgs::image_encodings::RGB8;
   using sensor_msgs::image_encodings::RGBA8;
@@ -64,17 +64,17 @@ void rosImageToVisp(vpImage<unsigned char>& dst,
   }
 }
 
-void vispImageToRos(sensor_msgs::msg::Image& dst,
+void vispImageToRos(std::shared_ptr<sensor_msgs::msg::Image> dst,
                     const vpImage<unsigned char>& src)
 {
-  dst.width = src.getWidth();
-  dst.height = src.getHeight();
-  dst.encoding = sensor_msgs::image_encodings::MONO8;
-  dst.step = src.getWidth();
-  dst.data.resize(dst.height * dst.step);
+  dst->width = src.getWidth();
+  dst->height = src.getHeight();
+  dst->encoding = sensor_msgs::image_encodings::MONO8;
+  dst->step = src.getWidth();
+  dst->data.resize(dst->height * dst->step);
   for(unsigned i = 0; i < src.getWidth (); ++i)
     for(unsigned j = 0; j < src.getHeight (); ++j)
-      dst.data[j * dst.step + i] = src[j][i];
+      dst->data[j * dst->step + i] = src[j][i];
 }
 
 
@@ -119,24 +119,24 @@ std::string convertVpKltOpencvToRosMessage(const vpMbGenericTracker &tracker, co
   return stream.str();
 }
 
-void vpHomogeneousMatrixToTransform(geometry_msgs::msg::Transform& dst,
+void vpHomogeneousMatrixToTransform(std::shared_ptr<geometry_msgs::msg::Transform> dst,
                                     const vpHomogeneousMatrix& src)
 {
   vpQuaternionVector quaternion;
   src.extract(quaternion);
 
-  dst.translation.x = src[0][3];
-  dst.translation.y = src[1][3];
-  dst.translation.z = src[2][3];
+  dst->translation.x = src[0][3];
+  dst->translation.y = src[1][3];
+  dst->translation.z = src[2][3];
 
-  dst.rotation.x = quaternion.x();
-  dst.rotation.y = quaternion.y();
-  dst.rotation.z = quaternion.z();
-  dst.rotation.w = quaternion.w();
+  dst->rotation.x = quaternion.x();
+  dst->rotation.y = quaternion.y();
+  dst->rotation.z = quaternion.z();
+  dst->rotation.w = quaternion.w();
 }
 
 void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
-                                    const geometry_msgs::msg::Transform& src)
+                                    const geometry_msgs::msg::Transform src)
 {
   vpTranslationVector translation(src.translation.x,src.translation.y,src.translation.z);
   vpQuaternionVector quaternion(src.rotation.x,src.rotation.y,src.rotation.z,src.rotation.w);
@@ -144,11 +144,19 @@ void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
 }
 
 void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
-                                    const geometry_msgs::msg::Pose& src)
+                                    const geometry_msgs::msg::TransformStamped src)
+{
+  vpTranslationVector translation(src.transform.translation.x,src.transform.translation.y,src.transform.translation.z);
+  vpQuaternionVector quaternion(src.transform.rotation.x,src.transform.rotation.y,src.transform.rotation.z,src.transform.rotation.w);
+  dst.buildFrom(translation, quaternion);
+}
+
+void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
+                                    const std::shared_ptr<geometry_msgs::msg::Pose> src)
 {
   vpQuaternionVector quaternion
-      (src.orientation.x, src.orientation.y, src.orientation.z,
-       src.orientation.w);
+      (src->orientation.x, src->orientation.y, src->orientation.z,
+       src->orientation.w);
   vpRotationMatrix rotation(quaternion);
 
   // Copy the rotation component.
@@ -157,9 +165,9 @@ void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,
       dst[i][j] = rotation[i][j];
 
   // Copy the translation component.
-  dst[0][3] = src.position.x;
-  dst[1][3] = src.position.y;
-  dst[2][3] = src.position.z;
+  dst[0][3] = src->position.x;
+  dst[1][3] = src->position.y;
+  dst[2][3] = src->position.z;
 }
 
 void transformToVpHomogeneousMatrix(vpHomogeneousMatrix& dst,

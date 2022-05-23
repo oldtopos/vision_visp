@@ -3,26 +3,26 @@
 # include <boost/filesystem/path.hpp>
 # include <boost/thread/recursive_mutex.hpp>
 
-# include <dynamic_reconfigure/server.h>
+//# include <dynamic_reconfigure/server.h>
 
-# include <image_proc/advertisement_checker.h>
+//# include <image_proc/advertisement_checker.h>
+# include <rcpputils/visibility_control.hpp>
+# include <image_transport/image_transport.hpp>
 
-# include <image_transport/image_transport.h>
+# include <geometry_msgs/msg/twist_stamped.hpp>
 
-# include <geometry_msgs/TwistStamped.h>
+# include <sensor_msgs/msg/image.hpp>
+# include <sensor_msgs/msg/camera_info.hpp>
 
-# include <sensor_msgs/Image.h>
-# include <sensor_msgs/CameraInfo.h>
+# include <tf2_ros/transform_broadcaster.h>
+# include <tf2_ros/transform_listener.h>
 
-# include <tf/transform_broadcaster.h>
-# include <tf/transform_listener.h>
-
-# include <visp_tracker/Init.h>
+# include <visp_tracker/srv/init.hpp>
 # include <visp_tracker/ModelBasedSettingsConfig.h>
 # include <visp_tracker/ModelBasedSettingsKltConfig.h>
 # include <visp_tracker/ModelBasedSettingsEdgeConfig.h>
-# include <visp_tracker/MovingEdgeSites.h>
-# include <visp_tracker/KltPoints.h>
+# include <visp_tracker/msg/moving_edge_sites.hpp>
+# include <visp_tracker/msg/klt_points.hpp>
 
 # include <visp3/core/vpCameraParameters.h>
 # include <visp3/core/vpHomogeneousMatrix.h>
@@ -34,19 +34,85 @@
 
 namespace visp_tracker
 {
-  class Tracker
+  
+  class parameter_info {
+    public:
+      parameter_info( std::string name, rclcpp::ParameterType type, std::string description, std::string additional_constraints, 
+                        bool read_only, bool dynamic_typing,
+                        double default_val, double start_val, double end_val, double step_val )
+      {
+        this->name = name;
+        this->type = type;
+        this->description = description;
+        this->additional_constraints = additional_constraints;
+        this->read_only = read_only;
+        this->dynamic_typing = dynamic_typing;
+        this->default_val.d = default_val;
+        this->start_val.d = start_val;
+        this->end_val.d = end_val;
+        this->step_val.d = step_val;
+      }
+      
+      parameter_info( std::string name, rclcpp::ParameterType type, std::string description, std::string additional_constraints, 
+                        bool read_only, bool dynamic_typing,
+                        int default_val, int start_val, int end_val, int step_val )
+      {
+        this->name = name;
+        this->type = type;
+        this->description = description;
+        this->additional_constraints = additional_constraints;
+        this->read_only = read_only;
+        this->dynamic_typing = dynamic_typing;
+        this->default_val.n = default_val;
+        this->start_val.n = start_val;
+        this->end_val.n = end_val;
+        this->step_val.n = step_val;
+        
+      }
+      
+      
+      std::string name;
+      rclcpp::ParameterType type;
+      std::string description;
+      std::string additional_constraints;
+      bool read_only;
+      bool dynamic_typing;
+      
+      union default_val_type
+      {
+          std::int32_t n;     
+          double d;    
+      } default_val;
+      
+      union start_val_type
+      {
+          std::int32_t n;     
+          double d;     
+      } start_val;
+      
+      union end_val_type
+      {
+          std::int32_t n;     
+          double d;     
+      } end_val;
+      
+      union step_val_type
+      {
+          std::int32_t n;     
+          double d;     
+      } step_val;
+  };
+
+
+  class Tracker : public rclcpp::Node
   {
   public:
     typedef vpImage<unsigned char> image_t;
 
-    typedef boost::function<bool (visp_tracker::Init::Request&,
-                                  visp_tracker::Init::Response& res)>
-    initCallback_t;
-
-    template<class ConfigType>
-    struct reconfigureSrvStruct{
-      typedef dynamic_reconfigure::Server<ConfigType> reconfigureSrv_t;
-    };
+//    template<class ConfigType>
+//    struct reconfigureSrvStruct{
+//      typedef dynamic_reconfigure::Server<ConfigType> reconfigureSrv_t;
+//    };
 
     enum State
     {
@@ -55,9 +121,11 @@ namespace visp_tracker
       LOST
     };
 
+//    COMPOSITION_PUBLIC.  FIXME for node composition
 
-    Tracker (ros::NodeHandle& nh,
-             ros::NodeHandle& privateNh,
+    Tracker (const rclcpp::NodeOptions & options,
+                 std::shared_ptr<rclcpp::Node> nh,
+                 std::shared_ptr<rclcpp::Node> privateNh,
              volatile bool& exiting,
              unsigned queueSize = 5u);
     
@@ -65,35 +133,43 @@ namespace visp_tracker
     
     void spin();
   protected:
-    bool initCallback(visp_tracker::Init::Request& req,
-                      visp_tracker::Init::Response& res);
+    void initCallback(const std::shared_ptr<rmw_request_id_t> request_header, 
+                        const std::shared_ptr<visp_tracker::srv::Init::Request> req,
+                        std::shared_ptr<visp_tracker::srv::Init::Response> res);
 
-    void updateMovingEdgeSites(visp_tracker::MovingEdgeSitesPtr sites);
-    void updateKltPoints(visp_tracker::KltPointsPtr klt);
+    void updateMovingEdgeSites(std::shared_ptr<visp_tracker::msg::MovingEdgeSites> sites);
+    void updateKltPoints(std::shared_ptr<visp_tracker::msg::KltPoints> klt);
 
     void checkInputs();
     void waitForImage();
 
     void objectPositionHintCallback
-    (const geometry_msgs::TransformStampedConstPtr&);
+    (const std::shared_ptr<geometry_msgs::msg::TransformStamped> );
+
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr callback_handle_;
+
+    rcl_interfaces::msg::SetParametersResult parametersCallback(
+        const std::vector<rclcpp::Parameter> &parameters);
+    bool create_parameter( const visp_tracker::parameter_info &param );
+    
   private:
     bool exiting ()
     {
-      return exiting_ || !ros::ok();
+      return exiting_ || !rclcpp::ok();
     }
 
     void spinOnce ()
     {
       //callbackQueue_.callAvailable(ros::WallDuration(0));
-      ros::spinOnce ();
+      //rclcpp::spin_node_once ();
     }
 
     volatile bool& exiting_;
 
     unsigned queueSize_;
 
-    ros::NodeHandle& nodeHandle_;
-    ros::NodeHandle& nodeHandlePrivate_;
+    std::shared_ptr<rclcpp::Node> nodeHandle_;
+    std::shared_ptr<rclcpp::Node> nodeHandlePrivate_;
     image_transport::ImageTransport imageTransport_;
 
     State state_;
@@ -104,26 +180,29 @@ namespace visp_tracker
     std::string cameraPrefix_;
     std::string rectifiedImageTopic_;
     std::string cameraInfoTopic_;
-
+    std::string parameterInfo_;
+    
     boost::filesystem::path modelPath_;
 
     image_transport::CameraSubscriber cameraSubscriber_;
 
     boost::recursive_mutex mutex_;
 
-    reconfigureSrvStruct<visp_tracker::ModelBasedSettingsConfig>::reconfigureSrv_t *reconfigureSrv_;
-    reconfigureSrvStruct<visp_tracker::ModelBasedSettingsKltConfig>::reconfigureSrv_t *reconfigureKltSrv_;
-    reconfigureSrvStruct<visp_tracker::ModelBasedSettingsEdgeConfig>::reconfigureSrv_t *reconfigureEdgeSrv_;
+    //reconfigureSrvStruct<visp_tracker::ModelBasedSettingsConfig>::reconfigureSrv_t *reconfigureSrv_;
+    //reconfigureSrvStruct<visp_tracker::ModelBasedSettingsKltConfig>::reconfigureSrv_t *reconfigureKltSrv_;
+    //reconfigureSrvStruct<visp_tracker::ModelBasedSettingsEdgeConfig>::reconfigureSrv_t *reconfigureEdgeSrv_;
 
-    ros::Publisher resultPublisher_;
-    ros::Publisher transformationPublisher_;
-    tf::TransformBroadcaster tfBroadcaster_;
-    ros::Publisher movingEdgeSitesPublisher_;
-    ros::Publisher kltPointsPublisher_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr resultPublisher_;
+    rclcpp::Publisher<geometry_msgs::msg::TransformStamped>::SharedPtr transformationPublisher_;
+//    tf2_ros::TransformBroadcaster tfBroadcaster_;
+    rclcpp::Publisher<visp_tracker::msg::MovingEdgeSites>::SharedPtr movingEdgeSitesPublisher_;
+    rclcpp::Publisher<visp_tracker::msg::KltPoints>::SharedPtr kltPointsPublisher_;
 
-    ros::ServiceServer initService_;
-    std_msgs::Header header_;
-    sensor_msgs::CameraInfoConstPtr info_;
+    rclcpp::Service<visp_tracker::srv::Init>::SharedPtr initService_;
+
+    std_msgs::msg::Header header_;
+    std::shared_ptr<std_msgs::msg::Header> header2_;
+    std::shared_ptr<sensor_msgs::msg::CameraInfo> info_;
 
     vpKltOpencv kltTracker_;
     vpMe movingEdge_;
@@ -133,19 +212,48 @@ namespace visp_tracker
     unsigned lastTrackedImage_;
 
     /// \brief Helper used to check that subscribed topics exist.
-    image_proc::AdvertisementChecker checkInputs_;
+    rclcpp::TimerBase::SharedPtr advertisement_timer_;
+    //image_proc::AdvertisementChecker checkInputs_;
 
     vpHomogeneousMatrix cMo_;
 
-    tf::TransformListener listener_;
+    std::unique_ptr<tf2_ros::Buffer> tfBuffer_;
+    std::shared_ptr<tf2_ros::TransformListener> listener_{nullptr};
+    std::unique_ptr<tf2_ros::TransformBroadcaster> transformBroadcaster_;
+    
     std::string worldFrameId_;
     bool compensateRobotMotion_;
 
-    tf::TransformBroadcaster transformBroadcaster_;
     std::string childFrameId_;
 
-    ros::Subscriber objectPositionHintSubscriber_;
-    geometry_msgs::TransformStamped objectPositionHint_;
+    rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr objectPositionHintSubscriber_;
+    
+    std::shared_ptr<geometry_msgs::msg::TransformStamped> objectPositionHint_;
+    
+    friend class ModelBasedSettingsConfig;
+    friend class ModelBasedSettingsEdgeConfig;
+    friend class ModelBasedSettingsKltConfig;
+    
+    // parameters 
+    double angle_appear_;
+    double angle_disappear_;
+    int mask_size_;
+    int range_;
+    double threshold_;
+    double mu1_;
+    double mu2_;
+    double sample_step_;
+    int strip_;
+    double first_threshold_;
+    int mask_border_;
+    int max_features_;
+    int window_size_;
+    double quality_;
+    double min_distance_;
+    double harris_;
+    int size_block_;
+    int pyramid_lvl_;
+
   };
 } // end of namespace visp_tracker.
 
