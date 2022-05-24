@@ -326,11 +326,11 @@ void ImageProcessing::interface()
 {
   vpImagePoint ip;
   while(rclcpp::ok()){
-    rclcpp::spinOnce();
+    //rclcpp::spinOnce();
     if(vpDisplay::getClick(img_,ip,false))
       pause_image_ = true;
   }
-  roclcpp::waitForShutdown();
+  //rclcpp::waitForShutdown();
 }
 
 ImageProcessing::~ImageProcessing()

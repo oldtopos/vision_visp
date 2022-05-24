@@ -371,13 +371,13 @@ Tracker::Tracker(const rclcpp::NodeOptions & options,
     nodeHandlePrivate_(privateNh),
     imageTransport_(nodeHandle_),
     state_(WAITING_FOR_INITIALIZATION),
-//    image_(),
-//    cameraPrefix_(),
-//    rectifiedImageTopic_(),
-//    cameraInfoTopic_(),
-//    modelPath_(),
+    image_(),
+    cameraPrefix_(),
+    rectifiedImageTopic_(),
+    cameraInfoTopic_(),
+    modelPath_(),
 //    cameraSubscriber_(),
-//    mutex_ (),
+    mutex_ (),
     //reconfigureSrv_(mutex_, nodeHandlePrivate_),
     //reconfigureSrv_(NULL),
     //reconfigureKltSrv_(NULL),
@@ -396,10 +396,10 @@ Tracker::Tracker(const rclcpp::NodeOptions & options,
     //checkInputs_(nodeHandle_, ros::this_node::getName()),
 //    cMo_ (),
 //    listener_ (),
-//    worldFrameId_ (),
-    compensateRobotMotion_ (false)
+    worldFrameId_ (),
+    compensateRobotMotion_ (false),
 //    transformBroadcaster_ (),
-//    childFrameId_ ()
+    childFrameId_ ()
 //    objectPositionHintSubscriber_ (),
 //    objectPositionHint_ ()
 {
@@ -500,147 +500,57 @@ Tracker::Tracker(const rclcpp::NodeOptions & options,
 
   // Parameter initialization
   if(trackerType_=="mbt+klt"){ // Hybrid Tracker reconfigure
-    auto angle_appear_desc = rcl_interfaces::msg::ParameterDescriptor();
-    angle_appear_desc.set__name( "angle_appear" ).set__type(rclcpp::ParameterType::PARAMETER_DOUBLE).set__description("Maximal angle value to consider an appearing face");
-    
-    auto angle_appear_range = rcl_interfaces::msg::FloatingPointRange();
-    angle_appear_range.set__from_value(0.0).set__to_value(90.0);
-    
-    rosidl_runtime_cpp::BoundedVector<rcl_interfaces::msg::FloatingPointRange, 1 > valid_range;
-    valid_range.push_back( angle_appear_range );
-    angle_appear_desc.set__floating_point_range( valid_range );
-
-    this->declare_parameter<double>("angle_appear", 65.0, angle_appear_desc);
-    
-#if 0
-    this->declare_parameter<double>("angle_disappear", "");
-    this->declare_parameter<int>("mask_size", "");
-    this->declare_parameter<int>("range", "");
-    this->declare_parameter<double>("threshold", "");
-    this->declare_parameter<double>("mu1", "");
-    this->declare_parameter<double>("mu2", "");
-    this->declare_parameter<double>("sample_step", "");
-    this->declare_parameter<int>("strip", "");
-    this->declare_parameter<double>("first_threshold", "");
-    this->declare_parameter<int>("mask_border", "");
-    this->declare_parameter<int>("max_features", "");
-    this->declare_parameter<int>("window_size", "");
-    this->declare_parameter<double>("quality", "");
-    this->declare_parameter<double>("min_distance", "");
-    this->declare_parameter<double>("harris", "");
-    this->declare_parameter<int>("size_block", "");
-    this->declare_parameter<int>("pyramid_lvl", "");
-
-    rclcpp::Parameter angle_appear_param = this->get_parameter("angle_appear");
-    rclcpp::Parameter angle_disappear_param = this->get_parameter("angle_disappear");
-    rclcpp::Parameter mask_size_param = this->get_parameter("mask_size");
-    rclcpp::Parameter range_param = this->get_parameter("range");
-    rclcpp::Parameter threshold_param = this->get_parameter("threshold");
-    rclcpp::Parameter mu1_param = this->get_parameter("mu1");
-    rclcpp::Parameter mu2_param = this->get_parameter("mu2");
-    rclcpp::Parameter sample_step_param = this->get_parameter("sample_step");
-    rclcpp::Parameter strip_param = this->get_parameter("strip");
-    rclcpp::Parameter first_threshold_param = this->get_parameter("first_threshold");
-    rclcpp::Parameter mask_border_param = this->get_parameter("mask_border");
-    rclcpp::Parameter max_features_param = this->get_parameter("max_features");
-    rclcpp::Parameter window_size_param = this->get_parameter("window_size");
-    rclcpp::Parameter quality_param = this->get_parameter("quality");
-    rclcpp::Parameter min_distance_param = this->get_parameter("min_distance");
-    rclcpp::Parameter harris_param = this->get_parameter("harris");
-    rclcpp::Parameter size_block_param = this->get_parameter("size_block");
-    rclcpp::Parameter pyramid_lvl_param = this->get_parameter("pyramid_lvl");
-
-    angle_appear_ = angle_appear_param.as_double();
-    angle_disappear_ = angle_disappear_param.as_double();
-    mask_size_ = mask_size_param.as_int();
-    range_ = range_param.as_int();
-    threshold_ = threshold_param.as_double();
-    mu1_ = mu1_param.as_double();
-    mu2_ = mu2_param.as_double();
-    sample_step_ = sample_step.as_double();
-    strip_ = strip_param.as_int();
-    first_threshold_ = first_threshold_param.as_double();
-    mask_border_ = mask_border_param.as_int();
-    max_features_ = max_features_param.as_int();
-    window_size_ = window_size_param.as_int();
-    quality_ = quality_param.as_double();
-    min_distance_ = min_distance_param.as_double();
-    harris_ = harris_param.as_double();
-    size_block_ = size_block_param.as_int();
-    pyramid_lvl_ = pyramid_lvl_param.as_int();
-#endif
+    std::vector<parameter_info> vecParams( arrModelBasedSettings.begin(), arrModelBasedSettings.end() );
+    parameter_info::create_parameters( this, vecParams);
+   
+    angle_appear_ = this->get_parameter(param_angle_appear).as_double();
+    angle_disappear_ =this->get_parameter(param_angle_disappear).as_double();
+    mask_size_ =this->get_parameter(param_mask_size).as_int();
+    range_ = this->get_parameter(param_range).as_int();
+    threshold_ = this->get_parameter(param_threshold).as_double();
+    mu1_ = this->get_parameter(param_mu1).as_double();
+    mu2_ = this->get_parameter(param_mu2).as_double();
+    sample_step_ = this->get_parameter(param_sample_step).as_double();
+    strip_ = this->get_parameter(param_strip).as_int();
+    first_threshold_ = this->get_parameter(param_first_threshold).as_double();
+    mask_border_ = this->get_parameter(param_mask_border).as_int();
+    max_features_ =this->get_parameter(param_max_features).as_int();
+    window_size_ = this->get_parameter(param_window_size).as_int();
+    quality_ = this->get_parameter(param_quality).as_double();
+    min_distance_ = this->get_parameter(param_min_distance).as_double();
+    harris_ = this->get_parameter(param_harris).as_double();
+    size_block_ = this->get_parameter(param_size_block).as_int();
+    pyramid_lvl_ = this->get_parameter(param_pyramid_lvl).as_int();
   }
   else if(trackerType_=="mbt"){ // Edge Tracker reconfigure
-#if 0
-    this->declare_parameter<double>("angle_appear", "");
-    this->declare_parameter<double>("angle_disappear", "");
-    this->declare_parameter<int>("mask_size", "");
-    this->declare_parameter<int>("range", "");
-    this->declare_parameter<double>("threshold", "");
-    this->declare_parameter<double>("mu1", "");
-    this->declare_parameter<double>("mu2", "");
-    this->declare_parameter<double>("sample_step", "");
-    this->declare_parameter<int>("strip", "");
-    this->declare_parameter<double>("first_threshold", "");
-
-    rclcpp::Parameter angle_appear_param = this->get_parameter("angle_appear");
-    rclcpp::Parameter angle_disappear_param = this->get_parameter("angle_disappear");
-    rclcpp::Parameter mask_size_param = this->get_parameter("mask_size");
-    rclcpp::Parameter range_param = this->get_parameter("range");
-    rclcpp::Parameter threshold_param = this->get_parameter("threshold");
-    rclcpp::Parameter mu1_param = this->get_parameter("mu1");
-    rclcpp::Parameter mu2_param = this->get_parameter("mu2");
-    rclcpp::Parameter sample_step_param = this->get_parameter("sample_step");
-    rclcpp::Parameter strip_param = this->get_parameter("strip");
-    rclcpp::Parameter first_threshold_param = this->get_parameter("first_threshold");
-
-    angle_appear_ = angle_appear_param.as_double();
-    angle_disappear_ = angle_disappear_param.as_double();
-    mask_size_ = mask_size_param.as_int();
-    range_ = range_param.as_int();
-    threshold_ = threshold_param.as_double();
-    mu1_ = mu1_param.as_double();
-    mu2_ = mu2_param.as_double();
-    sample_step_ = sample_step.as_double();
-    strip_ = strip_param.as_int();
-    first_threshold_ = first_threshold_param.as_double();
-#endif
+    std::vector<parameter_info> vecParams( arrModelBasedSettingsEdge.begin(), arrModelBasedSettingsEdge.end() );
+    parameter_info::create_parameters( this, vecParams);
+   
+    angle_appear_ = this->get_parameter(param_angle_appear).as_double();
+    angle_disappear_ =this->get_parameter(param_angle_disappear).as_double();
+    mask_size_ =this->get_parameter(param_mask_size).as_int();
+    range_ = this->get_parameter(param_range).as_int();
+    threshold_ = this->get_parameter(param_threshold).as_double();
+    mu1_ = this->get_parameter(param_mu1).as_double();
+    mu2_ = this->get_parameter(param_mu2).as_double();
+    sample_step_ = this->get_parameter(param_sample_step).as_double();
+    strip_ = this->get_parameter(param_strip).as_int();
+    first_threshold_ = this->get_parameter(param_first_threshold).as_double();
   }
   else{ // KLT Tracker reconfigure
-#if 0
-    this->declare_parameter<double>("angle_appear", "");
-    this->declare_parameter<double>("angle_disappear", "");
-    this->declare_parameter<int>("mask_border", "");
-    this->declare_parameter<int>("max_features", "");
-    this->declare_parameter<int>("window_size", "");
-    this->declare_parameter<double>("quality", "");
-    this->declare_parameter<double>("min_distance", "");
-    this->declare_parameter<double>("harris", "");
-    this->declare_parameter<int>("size_block", "");
-    this->declare_parameter<int>("pyramid_lvl", "");
-    
-    rclcpp::Parameter angle_appear_param = this->get_parameter("angle_appear");
-    rclcpp::Parameter angle_disappear_param = this->get_parameter("angle_disappear");
-    rclcpp::Parameter mask_border_param = this->get_parameter("mask_border");
-    rclcpp::Parameter max_features_param = this->get_parameter("max_features");
-    rclcpp::Parameter window_size_param = this->get_parameter("window_size");
-    rclcpp::Parameter quality_param = this->get_parameter("quality");
-    rclcpp::Parameter min_distance_param = this->get_parameter("min_distance");
-    rclcpp::Parameter harris_param = this->get_parameter("harris");
-    rclcpp::Parameter size_block_param = this->get_parameter("size_block");
-    rclcpp::Parameter pyramid_lvl_param = this->get_parameter("pyramid_lvl");
-    
-    angle_appear_ = angle_appear_param.as_double();
-    angle_disappear_ = angle_disappear_param.as_double();
-    mask_border_ = mask_border_param.as_int();
-    max_features_ = max_features_param.as_int();
-    window_size_ = window_size_param.as_int();
-    quality_ = quality_param.as_double();
-    min_distance_ = min_distance_param.as_double();
-    harris_ = harris_param.as_double();
-    size_block_ = size_block_param.as_int();
-    pyramid_lvl_ = pyramid_lvl_param.as_int();
-#endif
+    std::vector<parameter_info> vecParams( arrModelBasedSettingsKlt.begin(), arrModelBasedSettingsKlt.end() );
+    parameter_info::create_parameters( this, vecParams);
+   
+    angle_appear_ = this->get_parameter(param_angle_appear).as_double();
+    angle_disappear_ =this->get_parameter(param_angle_disappear).as_double();
+    mask_border_ = this->get_parameter(param_mask_border).as_int();
+    max_features_ =this->get_parameter(param_max_features).as_int();
+    window_size_ = this->get_parameter(param_window_size).as_int();
+    quality_ = this->get_parameter(param_quality).as_double();
+    min_distance_ = this->get_parameter(param_min_distance).as_double();
+    harris_ = this->get_parameter(param_harris).as_double();
+    size_block_ = this->get_parameter(param_size_block).as_int();
+    pyramid_lvl_ = this->get_parameter(param_pyramid_lvl).as_int();
   }
         
   // Dynamic reconfigure ROS2 replacement.
@@ -914,92 +824,92 @@ rcl_interfaces::msg::SetParametersResult Tracker::parametersCallback(
     std::string strParameterName = aParameter.get_name();
     rclcpp::ParameterType strParameterType = aParameter.get_type();
 
-    if( strParameterName == "angle_appear" ) {
+    if( strParameterName == param_angle_appear ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         angle_appear_ = aParameter.as_double();
       }
     }
-    else if( strParameterName == "angle_disappear" ) {
+    else if( strParameterName == param_angle_disappear ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         angle_disappear_ = aParameter.as_double();
       }
     }
-    else if( strParameterName == "mask_size" ) {
+    else if( strParameterName == param_mask_size ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_INTEGER) {
         mask_size_ = aParameter.as_int();
       }
     }
-    else if( strParameterName == "range" ) {
+    else if( strParameterName == param_range ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_INTEGER) {
         range_ = aParameter.as_int();
       }
     }
-    else if( strParameterName == "threshold" ) {
+    else if( strParameterName == param_threshold ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         threshold_ = aParameter.as_double();
       }
     }
-    else if( strParameterName == "mu1" ) {
+    else if( strParameterName == param_mu1 ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         mu1_ = aParameter.as_double();
       }
     }
-    else if( strParameterName == "mu2" ) {
+    else if( strParameterName == param_mu2 ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         mu2_ = aParameter.as_double();
       }
     }
-    else if( strParameterName == "sample_step" ) {
+    else if( strParameterName == param_sample_step ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         sample_step_ = aParameter.as_double();
       }
     }
-    else if( strParameterName == "strip" ) {
+    else if( strParameterName == param_strip ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_INTEGER) {
         strip_ = aParameter.as_int();
       }
     }
-    else if( strParameterName == "first_threshold" ) {
+    else if( strParameterName == param_first_threshold ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         first_threshold_ = aParameter.as_double();
       }
     }
-    else if( strParameterName == "mask_border" ) {
+    else if( strParameterName == param_mask_border ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_INTEGER) {
         mask_border_ = aParameter.as_int();
       }
     }
-    else if( strParameterName == "max_features" ) {
+    else if( strParameterName == param_max_features ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_INTEGER) {
         max_features_ = aParameter.as_int();
       }
     }
-    else if( strParameterName == "window_size" ) {
+    else if( strParameterName == param_window_size ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_INTEGER) {
         window_size_ = aParameter.as_int();
       }
     }
-    else if( strParameterName == "quality" ) {
+    else if( strParameterName == param_quality ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         quality_ = aParameter.as_double();
       }
     }
-    else if( strParameterName == "min_distance" ) {
+    else if( strParameterName == param_min_distance ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         min_distance_ = aParameter.as_double();
       }
     }
-    else if( strParameterName == "harris" ) {
+    else if( strParameterName == param_harris ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         harris_ = aParameter.as_double();
       }
     }
-    else if( strParameterName == "size_block" ) {
+    else if( strParameterName == param_size_block ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_INTEGER) {
         size_block_ = aParameter.as_int();
       }
     }
-    else if( strParameterName == "pyramid_lvl" ) {
+    else if( strParameterName == param_pyramid_lvl ) {
       if( strParameterType == rclcpp::ParameterType::PARAMETER_INTEGER) {
         pyramid_lvl_ = aParameter.as_int();
       }
@@ -1030,91 +940,12 @@ rcl_interfaces::msg::SetParametersResult Tracker::parametersCallback(
         std::ref(image_), std::ref(kltTracker_),
         std::ref(mutex_), config, 1 );
   }
-}
-
-bool
-Tracker::create_parameter( const visp_tracker::parameter_info &param ) {
-
-    if( param.type == rclcpp::ParameterType::PARAMETER_INTEGER)
-    {
-      rosidl_runtime_cpp::BoundedVector<rcl_interfaces::msg::FloatingPointRange, 1 > dummy_range;
-
-      rcl_interfaces::msg::IntegerRange integer_range = rcl_interfaces::build<rcl_interfaces::msg::IntegerRange>()
-              .from_value( param.start_val.n )
-              .to_value( param.end_val.n )
-              .step( 0 );
-              
-      rosidl_runtime_cpp::BoundedVector<rcl_interfaces::msg::IntegerRange, 1 > valid_range;
-      valid_range.push_back( integer_range );
-      
-      rcl_interfaces::msg::ParameterDescriptor parameter_desc = rcl_interfaces::build<rcl_interfaces::msg::ParameterDescriptor>()
-              .name( param.name )
-              .type( rclcpp::ParameterType::PARAMETER_INTEGER )
-              .description(param.description)
-              .additional_constraints( "" )
-              .read_only( false )
-              .dynamic_typing( false )
-              .floating_point_range( dummy_range )
-              .integer_range( valid_range );
-              
-      this->declare_parameter<int>(param.name, param.default_val.d, parameter_desc);
-    }
-    else if( param.type == rclcpp::ParameterType::PARAMETER_DOUBLE)
-    {
-      rcl_interfaces::msg::FloatingPointRange floating_point_range = rcl_interfaces::build<rcl_interfaces::msg::FloatingPointRange>()
-              .from_value( param.start_val.d )
-              .to_value( param.end_val.d )
-              .step( 0.0 );
-              
-      rosidl_runtime_cpp::BoundedVector<rcl_interfaces::msg::FloatingPointRange, 1 > valid_range;
-      valid_range.push_back( floating_point_range );
-      
-      rosidl_runtime_cpp::BoundedVector<rcl_interfaces::msg::IntegerRange, 1 > dummy_range;
-
-      rcl_interfaces::msg::ParameterDescriptor parameter_desc = rcl_interfaces::build<rcl_interfaces::msg::ParameterDescriptor>()
-              .name( param.name )
-              .type( rclcpp::ParameterType::PARAMETER_DOUBLE )
-              .description(param.description)
-              .additional_constraints( "" )
-              .read_only( false )
-              .dynamic_typing( false )
-              .floating_point_range( valid_range )
-              .integer_range( dummy_range );
-              
-      this->declare_parameter<double>(param.name, param.default_val.d, parameter_desc);
-    }
-    else
-    {
-      RCLCPP_FATAL (rclcpp::get_logger("rclcpp"), "Parameter type is not handled, currently only Integer and Double supported" );
-      return false;
-    }
-    
-    return true;
-#if 0
-
-      rcl_interfaces::msg::FloatingPointRange angle_appear_range = rcl_interfaces::build<rcl_interfaces::msg::FloatingPointRange>()
-              .from_value( param.start_val.d )
-              .to_value( param.end_val.d )
-              .step( 0.0 );
-              
-      rosidl_runtime_cpp::BoundedVector<rcl_interfaces::msg::FloatingPointRange, 1 > valid_range;
-      valid_range.push_back( angle_appear_range );
-      
-      rosidl_runtime_cpp::BoundedVector<rcl_interfaces::msg::IntegerRange, 1 > dummy_range;
-
-      rcl_interfaces::msg::ParameterDescriptor angle_appear_desc = rcl_interfaces::build<rcl_interfaces::msg::ParameterDescriptor>()
-              .name( param.name )
-              .type( rclcpp::ParameterType::PARAMETER_DOUBLE )
-              .description(param.description)
-              .additional_constraints( "" )
-              .read_only( false )
-              .dynamic_typing( false )
-              .floating_point_range( valid_range )
-              .integer_range( dummy_range );
-              
-      this->declare_parameter<double>(param.name, param.default_val.d, param.description);
-
-#endif
+  
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = true;
+  result.reason = "success";
+ 
+  return result;
 }
 
 } // end of namespace visp_tracker.

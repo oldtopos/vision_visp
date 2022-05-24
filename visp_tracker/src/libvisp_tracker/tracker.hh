@@ -32,78 +32,10 @@
 
 # include <string>
 
+#include "parameter_info.hpp"
+
 namespace visp_tracker
 {
-  
-  class parameter_info {
-    public:
-      parameter_info( std::string name, rclcpp::ParameterType type, std::string description, std::string additional_constraints, 
-                        bool read_only, bool dynamic_typing,
-                        double default_val, double start_val, double end_val, double step_val )
-      {
-        this->name = name;
-        this->type = type;
-        this->description = description;
-        this->additional_constraints = additional_constraints;
-        this->read_only = read_only;
-        this->dynamic_typing = dynamic_typing;
-        this->default_val.d = default_val;
-        this->start_val.d = start_val;
-        this->end_val.d = end_val;
-        this->step_val.d = step_val;
-      }
-      
-      parameter_info( std::string name, rclcpp::ParameterType type, std::string description, std::string additional_constraints, 
-                        bool read_only, bool dynamic_typing,
-                        int default_val, int start_val, int end_val, int step_val )
-      {
-        this->name = name;
-        this->type = type;
-        this->description = description;
-        this->additional_constraints = additional_constraints;
-        this->read_only = read_only;
-        this->dynamic_typing = dynamic_typing;
-        this->default_val.n = default_val;
-        this->start_val.n = start_val;
-        this->end_val.n = end_val;
-        this->step_val.n = step_val;
-        
-      }
-      
-      
-      std::string name;
-      rclcpp::ParameterType type;
-      std::string description;
-      std::string additional_constraints;
-      bool read_only;
-      bool dynamic_typing;
-      
-      union default_val_type
-      {
-          std::int32_t n;     
-          double d;    
-      } default_val;
-      
-      union start_val_type
-      {
-          std::int32_t n;     
-          double d;     
-      } start_val;
-      
-      union end_val_type
-      {
-          std::int32_t n;     
-          double d;     
-      } end_val;
-      
-      union step_val_type
-      {
-          std::int32_t n;     
-          double d;     
-      } step_val;
-  };
-
-
   class Tracker : public rclcpp::Node
   {
   public:
@@ -150,8 +82,7 @@ namespace visp_tracker
 
     rcl_interfaces::msg::SetParametersResult parametersCallback(
         const std::vector<rclcpp::Parameter> &parameters);
-    bool create_parameter( const visp_tracker::parameter_info &param );
-    
+
   private:
     bool exiting ()
     {

@@ -65,6 +65,8 @@ add_library(${PROJECT_NAME}_common
   src/lib${PROJECT_NAME}/file.hh
   src/lib${PROJECT_NAME}/names.cpp
   src/lib${PROJECT_NAME}/names.hh
+  src/lib${PROJECT_NAME}/parameter_info.cpp
+  src/lib${PROJECT_NAME}/parameter_info.hpp
 #  src/lib${PROJECT_NAME}/tracker-client.cpp
 #  src/lib${PROJECT_NAME}/tracker-client.hh
 #  src/lib${PROJECT_NAME}/tracker-viewer.cpp

@@ -150,7 +150,7 @@ namespace visp_camera_calibration
     return;
   }
   void Calibrator::spin(){
-    rclcpp::spin();
+    //rclcpp::spin();
   }
 
   Calibrator::~Calibrator()

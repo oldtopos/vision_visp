@@ -171,7 +171,7 @@ namespace visp_hand2eye_calibration
 
   void Calibrator::spin()
   {
-    rclcpp::spin();
+    //rclcpp::spin();
   }
   Calibrator::~Calibrator()
   {
