@@ -41,11 +41,6 @@ namespace visp_tracker
   public:
     typedef vpImage<unsigned char> image_t;
 
-//    template<class ConfigType>
-//    struct reconfigureSrvStruct{
-//      typedef dynamic_reconfigure::Server<ConfigType> reconfigureSrv_t;
-//    };
-
     enum State
     {
       WAITING_FOR_INITIALIZATION,
@@ -55,10 +50,12 @@ namespace visp_tracker
 
 //    COMPOSITION_PUBLIC.  FIXME for node composition
 
+    Tracker (const rclcpp::NodeOptions & options );
+             
     Tracker (const rclcpp::NodeOptions & options,
                  std::shared_ptr<rclcpp::Node> nh,
                  std::shared_ptr<rclcpp::Node> privateNh,
-             volatile bool& exiting,
+             bool exiting,
              unsigned queueSize = 5u);
     
     ~Tracker();
@@ -95,7 +92,7 @@ namespace visp_tracker
       //rclcpp::spin_node_once ();
     }
 
-    volatile bool& exiting_;
+    bool exiting_;
 
     unsigned queueSize_;
 
@@ -118,10 +115,6 @@ namespace visp_tracker
     image_transport::CameraSubscriber cameraSubscriber_;
 
     boost::recursive_mutex mutex_;
-
-    //reconfigureSrvStruct<visp_tracker::ModelBasedSettingsConfig>::reconfigureSrv_t *reconfigureSrv_;
-    //reconfigureSrvStruct<visp_tracker::ModelBasedSettingsKltConfig>::reconfigureSrv_t *reconfigureKltSrv_;
-    //reconfigureSrvStruct<visp_tracker::ModelBasedSettingsEdgeConfig>::reconfigureSrv_t *reconfigureEdgeSrv_;
 
     rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr resultPublisher_;
     rclcpp::Publisher<geometry_msgs::msg::TransformStamped>::SharedPtr transformationPublisher_;

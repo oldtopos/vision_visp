@@ -359,10 +359,18 @@ void Tracker::checkInputs()
   RCLCPP_WARN(rclcpp::get_logger("rclcpp"), "The input topic '%s' is not yet advertised", rectifiedImageTopic_.c_str());
 }
 
+Tracker::Tracker(const rclcpp::NodeOptions & options)
+  : Node("tracker", options),
+  exiting_ (false),
+  imageTransport_(std::shared_ptr<rclcpp::Node>(this))
+{
+  
+}
+
 Tracker::Tracker(const rclcpp::NodeOptions & options,
                  std::shared_ptr<rclcpp::Node> nh,
                  std::shared_ptr<rclcpp::Node> privateNh,
-                 volatile bool& exiting,
+                 bool exiting,
                  unsigned queueSize)
   : Node("tracker", options),
     exiting_ (exiting),
@@ -376,32 +384,27 @@ Tracker::Tracker(const rclcpp::NodeOptions & options,
     rectifiedImageTopic_(),
     cameraInfoTopic_(),
     modelPath_(),
-//    cameraSubscriber_(),
+    cameraSubscriber_(),
     mutex_ (),
-    //reconfigureSrv_(mutex_, nodeHandlePrivate_),
-    //reconfigureSrv_(NULL),
-    //reconfigureKltSrv_(NULL),
-    //reconfigureEdgeSrv_(NULL),
-//    resultPublisher_(),
-//    transformationPublisher_(),
-//    movingEdgeSitesPublisher_(),
-//    kltPointsPublisher_(),
-//    initService_(),
-//    header_(),
-//    info_(),
-//    kltTracker_(),
-//    movingEdge_(),
-//    cameraParameters_(),
-//    lastTrackedImage_(),
-    //checkInputs_(nodeHandle_, ros::this_node::getName()),
-//    cMo_ (),
-//    listener_ (),
+    resultPublisher_(),
+    transformationPublisher_(),
+    movingEdgeSitesPublisher_(),
+    kltPointsPublisher_(),
+    initService_(),
+    header_(),
+    info_(),
+    kltTracker_(),
+    movingEdge_(),
+    cameraParameters_(),
+    lastTrackedImage_(),
+    cMo_ (),
+    listener_ (),
     worldFrameId_ (),
     compensateRobotMotion_ (false),
-//    transformBroadcaster_ (),
-    childFrameId_ ()
-//    objectPositionHintSubscriber_ (),
-//    objectPositionHint_ ()
+    transformBroadcaster_ (),
+    childFrameId_ (),
+    objectPositionHintSubscriber_ (),
+    objectPositionHint_ ()
 {
   // Set cMo to identity.
   cMo_.eye();
@@ -955,4 +958,4 @@ rcl_interfaces::msg::SetParametersResult Tracker::parametersCallback(
 // Register the component with class_loader.
 // This acts as a sort of entry point, allowing the component to be discoverable when its library
 // is being loaded into a running process.
-//RCLCPP_COMPONENTS_REGISTER_NODE(visp_tracker::Tracker)
+RCLCPP_COMPONENTS_REGISTER_NODE(visp_tracker::Tracker)
